@@ -256,11 +256,22 @@ export default function BloodBankDetailPage() {
                  </div>
              )}
 
-             {initialGoogleMapsEmbedUrl && ( // Check if initial URL exists
-                  <GoogleMapEmbed
-                       initialEmbedUrl={initialGoogleMapsEmbedUrl} // Pass initial URL
-                       title={`Map of ${bank.name}`}
-                   />
+             {initialGoogleMapsEmbedUrl && bank.locationCoords && (
+               <GoogleMapEmbed
+                 center={{ 
+                   lat: bank.locationCoords.lat,
+                   lng: bank.locationCoords.lng
+                 }}
+                 zoom={15}
+                 markers={[{
+                   position: {
+                     lat: bank.locationCoords.lat,
+                     lng: bank.locationCoords.lng
+                   },
+                   title: bank.name,
+                   address: bank.location
+                 }]}
+               />
              )}
             {!apiKey && (
                 <Alert variant="destructive" className="mt-4">

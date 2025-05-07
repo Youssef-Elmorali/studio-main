@@ -32,11 +32,11 @@ interface MapViewProps {
 
 export function MapView({ banks, initialCenter = [31.9632, 35.9306], initialZoom = 7 }: MapViewProps) {
   const [isClient, setIsClient] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [currentCenter, setCurrentCenter] = useState<LatLngExpression>(initialCenter);
   const [currentZoom, setCurrentZoom] = useState<number>(initialZoom);
-  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -129,31 +129,7 @@ export function MapView({ banks, initialCenter = [31.9632, 35.9306], initialZoom
     <div className="space-y-4 p-4 md:p-6 border rounded-lg bg-muted/50 mt-8">
        <h3 className="text-lg font-semibold text-center mb-4">Map View</h3>
 
-       {/* Search Bar */}
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 mb-4">
-            <Label htmlFor="map-search" className="sr-only">Search Location on Map</Label>
-            <Input
-                id="map-search"
-                type="search"
-                placeholder="Search for location to center map..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-grow bg-background"
-                disabled={isLoading}
-            />
-            <Button type="submit" variant="outline" disabled={isLoading || !searchQuery.trim()}>
-                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                 {isLoading ? 'Searching...' : 'Search Map'}
-            </Button>
-        </form>
-
-        {searchError && (
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Search Error</AlertTitle>
-                <AlertDescription>{searchError}</AlertDescription>
-            </Alert>
-        )}
+       
 
       <div className="relative h-[450px] w-full bg-muted rounded-md overflow-hidden border">
          {/* Use a key that forces remount only when necessary, like number of banks if markers change drastically */}
@@ -184,7 +160,7 @@ export function MapView({ banks, initialCenter = [31.9632, 35.9306], initialZoom
           </MapContainer>
       </div>
        <p className="text-xs text-muted-foreground text-center mt-2">
-          Map displays available blood banks. Use search to center the map on a location.
+          Map displays available blood bank locations.
        </p>
     </div>
   );

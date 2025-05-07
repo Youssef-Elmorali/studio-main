@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { User, Lock, Bell, ShieldAlert, Loader2, AlertCircle } from "lucide-react";
-import { useAuth } from '@/hooks/useAuth'; // Use the Firebase auth hook
+import { useAuth, ProfileNotFoundError } from '@/hooks/useAuth'; // Use the Firebase auth hook
 import { auth, db } from '@/lib/firebase/client'; // Import Firebase instances
 import { updatePassword, type AuthError, type User as FirebaseUser } from 'firebase/auth'; // Import Firebase User type
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -222,14 +222,27 @@ export default function SettingsPage() {
    }
 
     if (authError || !userProfile) {
-        const message = authError?.message || (!userProfile ? "Could not load user profile data." : "An error occurred.");
+        let message = "An error occurred while loading your settings.";
+        let title = "Error Loading Settings";
+        let showLoginButton = true;
+
+        if (authError instanceof ProfileNotFoundError) {
+            title = "Profile Not Found";
+            message = "We couldn't find your profile data. This might happen if your account setup is incomplete. Please try logging out and back in, or contact support if the issue persists.";
+            // Optionally, you might want to hide the login button or change its text
+        } else if (authError) {
+            message = authError.message;
+        } else if (!userProfile) {
+            message = "Could not load user profile data. Please try again or contact support.";
+        }
+
         return (
             <div className="container mx-auto py-12 px-4 text-center">
                 <Alert variant="destructive" className="max-w-md mx-auto">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error Loading Settings</AlertTitle>
+                    <AlertTitle>{title}</AlertTitle>
                     <AlertDescription>{message}</AlertDescription>
-                    <Link href="/auth/login"><Button className="mt-4">Go to Login</Button></Link>
+                    {showLoginButton && <Link href="/auth/login"><Button className="mt-4">Go to Login</Button></Link>}
                 </Alert>
             </div>
         );

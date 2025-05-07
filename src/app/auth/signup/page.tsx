@@ -30,8 +30,8 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 
 
 // --- Constants ---
-const bloodGroups: BloodGroup[] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-const genders: Exclude<Gender, 'Other' | 'Prefer not to say'>[] = ['Male', 'Female'];
+const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as [string, ...string[]];
+const genders = ['Male', 'Female'] as [string, ...string[]];
 const roles: UserRole[] = ['donor', 'recipient'];
 const MIN_AGE = 16;
 const MAX_YEAR_RANGE = 120;
@@ -52,8 +52,8 @@ const signupSchema = z.object({
      selectedDate.setHours(0, 0, 0, 0);
      return selectedDate <= minAgeDate;
   }, { message: `You must be at least ${MIN_AGE} years old` }),
-  bloodGroup: z.enum(bloodGroups, { required_error: "Blood group is required" }),
-  gender: z.enum(genders, { required_error: "Gender is required" }),
+  bloodGroup: z.enum(bloodGroups as [string, ...string[]], { required_error: "Blood group is required" }),
+  gender: z.enum(genders as [string, ...string[]], { required_error: "Gender is required" }),
   password: z.string()
     .min(8, { message: "Password must be at least 8 characters long" })
     .regex(/[0-9]/, { message: "Password must contain at least one number" })
@@ -85,7 +85,7 @@ export default function SignupPage() {
     resolver: zodResolver(signupSchema),
     defaultValues: {
        role: undefined,
-       terms: false,
+       terms: true,
        lastDonationDate: null,
        medicalConditions: '',
        dob: undefined,
@@ -104,10 +104,10 @@ export default function SignupPage() {
       if (isValid(date) && date.getUTCFullYear() === year && date.getUTCMonth() === month && date.getUTCDate() === day) {
          setValue("dob", date, { shouldValidate: true });
       } else {
-         setValue("dob", undefined, { shouldValidate: true }); // Set to undefined if date is invalid
+         setValue("dob", new Date(), { shouldValidate: true }); // Set to undefined if date is invalid
       }
     } else {
-       setValue("dob", undefined, { shouldValidate: true }); // Set to undefined if any part is missing
+       setValue("dob", new Date(), { shouldValidate: true }); // Set to undefined if any part is missing
     }
   }, [selectedDay, selectedMonth, selectedYear, setValue]);
 
@@ -139,7 +139,7 @@ export default function SignupPage() {
    React.useEffect(() => {
        if (selectedDay && parseInt(selectedDay, 10) > daysInMonth) {
            setSelectedDay('');
-           setValue("dob", undefined, { shouldValidate: true }); // Also clear the main dob value
+           setValue("dob", new Date(), { shouldValidate: true }); // Also clear the main dob value
        }
    }, [daysInMonth, selectedDay, setValue]);
 
@@ -189,8 +189,8 @@ export default function SignupPage() {
             lastName: data.lastName,
             phone: data.phone,
             dob: data.dob ? Timestamp.fromDate(data.dob) : null, // Convert JS Date to Firestore Timestamp
-            bloodGroup: data.bloodGroup,
-            gender: data.gender,
+            bloodGroup: data.bloodGroup as BloodGroup,
+            gender: data.gender as Gender,
             role: data.role,
             createdAt: serverTimestamp() as Timestamp, // Use server timestamp for creation
             updatedAt: serverTimestamp() as Timestamp, // Use server timestamp for update
@@ -211,11 +211,10 @@ export default function SignupPage() {
         // Optional: Send email verification (Firebase handles this if enabled in console)
         // await sendEmailVerification(user);
 
-        toast({ title: "Account Created Successfully!", description: "Please check your email to verify your account (if applicable)." });
-        // Redirect to login or a confirmation page
-        router.push('/auth/login?status=signup_success');
-
-    } catch (err: any) {
+            toast({ title: "Signup Successful", description: "Welcome! Your account has been created. Redirecting to your profile..." });
+            // Redirect to profile page after successful signup
+            router.push('/profile'); 
+        } catch (err: any) {
        console.error("Signup failed:", err);
         let errorMessage = "An unexpected error occurred. Please try again.";
         const authError = err as AuthError; // Type assertion for Firebase errors

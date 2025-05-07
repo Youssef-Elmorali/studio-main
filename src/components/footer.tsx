@@ -1,10 +1,32 @@
 
+"use client";
+
 import Link from 'next/link';
-import { Droplets, Facebook, Twitter, Instagram } from 'lucide-react';
+import { Droplets, Facebook, Twitter, Instagram, DatabaseZap } from 'lucide-react';
+import { seedDatabase } from '@/lib/firebase/seed'; // Adjust path as necessary
+import { Button } from '@/components/ui/button'; // Assuming you have a Button component
+import { useToast } from '@/hooks/use-toast'; // For feedback
 
 export function Footer() {
+  const { toast } = useToast();
+
+  const handleSeedDatabase = async () => {
+    try {
+      toast({ title: 'Seeding database...', description: 'Please wait.' });
+      await seedDatabase();
+      toast({ title: 'Success!', description: 'Database seeded successfully.' });
+    } catch (error) {
+      console.error('Error seeding database from footer:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to seed database: ${error instanceof Error ? error.message : String(error)}`,
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
-    <footer className="bg-muted text-muted-foreground border-t">
+    <footer className="bg-muted text-muted-foreground border-t group relative">
       <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo and About */}
@@ -62,9 +84,21 @@ export function Footer() {
            </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t text-center text-xs">
+        <div className="mt-8 pt-6 border-t text-center text-xs relative">
           <p>&copy; {new Date().getFullYear()} Qatrah Hayat. All rights reserved.</p>
-           <p>Designed to connect and save lives.</p>
+          <p>Designed to connect and save lives.</p>
+          {/* Seed Database Button - Visible on footer hover */}
+          <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={handleSeedDatabase}
+              className="bg-card hover:bg-card/90 border-primary text-primary hover:text-primary-foreground"
+            >
+              <DatabaseZap className="mr-2 h-4 w-4" />
+              Seed Database
+            </Button>
+          </div>
         </div>
       </div>
     </footer>

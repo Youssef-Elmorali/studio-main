@@ -1,7 +1,7 @@
 
 // src/lib/firebase/client.ts
 import { initializeApp, getApps, getApp, type FirebaseOptions } from 'firebase/app';
-import { getAuth, connectAuthEmulator, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, connectAuthEmulator, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, type Auth } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
@@ -20,39 +20,83 @@ const firebaseConfig: FirebaseOptions = {
 let app;
 if (!getApps().length) {
   try {
-      // Basic check if essential config values are present
-      if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-         throw new Error("Firebase configuration is missing required fields (apiKey, projectId). Check .env.local.");
+      // Validate all required Firebase config values
+      const requiredConfig = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+      const missingConfig = requiredConfig.filter(key => !(firebaseConfig as Record<string, unknown>)[key]);
+      
+      if (missingConfig.length) {
+         const errorMsg = `Firebase configuration is missing required fields: ${missingConfig.join(', ')}. Check .env.local.`;
+         console.error('Firebase Config Error:', {
+           missingFields: missingConfig,
+           config: {
+             apiKey: !!firebaseConfig.apiKey,
+             authDomain: !!firebaseConfig.authDomain,
+             projectId: !!firebaseConfig.projectId,
+             storageBucket: !!firebaseConfig.storageBucket,
+             messagingSenderId: !!firebaseConfig.messagingSenderId,
+             appId: !!firebaseConfig.appId
+           }
+         });
+         throw new Error(errorMsg);
       }
+      
       app = initializeApp(firebaseConfig);
-      console.log("Firebase initialized successfully.");
+      console.log("Firebase initialized successfully with config:", {
+        projectId: firebaseConfig.projectId,
+        authDomain: firebaseConfig.authDomain
+      });
   } catch (e: any) {
-      console.error("Firebase initialization error:", e.message);
-      // Rethrow or handle appropriately
-      throw e;
+      console.error("Firebase initialization failed:", {
+        error: e.message,
+        stack: e.stack,
+        config: {
+          apiKey: !!firebaseConfig.apiKey,
+          authDomain: !!firebaseConfig.authDomain,
+          projectId: !!firebaseConfig.projectId,
+          storageBucket: !!firebaseConfig.storageBucket,
+          messagingSenderId: !!firebaseConfig.messagingSenderId,
+          appId: !!firebaseConfig.appId
+        },
+        envFileExists: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY
+      });
+      throw new Error(`Firebase initialization failed: ${e.message}. Please check your configuration and restart the server.`);
   }
-
 } else {
   app = getApp();
   console.log("Using existing Firebase app instance.");
 }
 
-let authInstance = null;
-let dbInstance = null;
-let storageInstance = null;
-let functionsInstance = null;
+let authInstance: Auth | null = null;
+let dbInstance: ReturnType<typeof getFirestore> | null = null;
+let storageInstance: ReturnType<typeof getStorage> | null = null;
+let functionsInstance: ReturnType<typeof getFunctions> | null = null;
 
 // Initialize services with proper error handling
 try {
     if (app) {
         // Initialize Auth with enhanced error handling
         authInstance = getAuth(app);
-        if (!authInstance) throw new Error("Failed to initialize Firebase Auth service");
+        if (!authInstance) {
+            throw new Error("Failed to initialize Firebase Auth service");
+        }
+        // Updated auth initialization
+        // The methods signInWithEmailAndPassword and createUserWithEmailAndPassword are imported directly
+        // from 'firebase/auth' and used with the authInstance, not as properties of it.
+        // Therefore, checking for them on authInstance directly is incorrect.
+        
+        console.log("Firebase Auth service initialized successfully");
         
         // Initialize other services
         dbInstance = getFirestore(app);
         storageInstance = getStorage(app);
         functionsInstance = getFunctions(app);
+        
+        console.log("Firebase services initialized successfully:", {
+          auth: !!authInstance,
+          firestore: !!dbInstance,
+          storage: !!storageInstance,
+          functions: !!functionsInstance
+        });
         
         // Set persistence for auth if needed
         // await setPersistence(authInstance, browserSessionPersistence);
@@ -60,8 +104,17 @@ try {
         throw new Error("Firebase app instance is not available. Cannot get services.");
     }
 } catch (e: any) {
-    console.error("Error initializing Firebase services:", e);
-    throw new Error(`Firebase service initialization failed: ${e.message}`);
+    console.error("Error initializing Firebase services:", {
+      error: e.message,
+      stack: e.stack,
+      timestamp: new Date().toISOString(),
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        firebaseConfigPresent: !!firebaseConfig.apiKey,
+        appInitialized: !!app
+      }
+    });
+    throw new Error(`Firebase service initialization failed: ${e.message}. Please check your configuration and restart the development server.`);
 }
 
 // Add auth state change listener for global auth state management
@@ -88,19 +141,31 @@ if (
    try {
        // Use 127.0.0.1 for emulators
        // Check if already connected to avoid errors on hot-reloads
-       if (authInstance && !authInstance?.emulatorConfig) {
+       if (authInstance && !authInstance.emulatorConfig) { // Removed optional chaining as authInstance is confirmed non-null
             connectAuthEmulator(authInstance, "http://127.0.0.1:9099", { disableWarnings: true });
             console.log("🔒 Auth Emulator connected to http://127.0.0.1:9099");
+            // After connecting, emulatorConfig should be set. Add a check for type safety.
+            if (authInstance.emulatorConfig) {
+                const emulatorConfig = authInstance.emulatorConfig; // Intermediate variable
+                console.log(`Auth emulator configured at: http://${emulatorConfig.host}:${emulatorConfig.port}`);
+            } else {
+                console.warn("Auth emulator config not found after attempting to connect.");
+            }
+       } else if (authInstance && authInstance.emulatorConfig) {
+            // If already configured (e.g. due to hot reload and already connected), log its current config
+            // This handles the case where the emulator was already connected (e.g. on HMR)
+            const emulatorConfig = authInstance.emulatorConfig; // Intermediate variable
+            console.log(`Auth emulator already configured at: http://${emulatorConfig.host}:${emulatorConfig.port}`);
        }
        if (dbInstance && !(dbInstance as any)._settings?.host) { // Check Firestore connection more reliably
            connectFirestoreEmulator(dbInstance, "127.0.0.1", 8080);
            console.log("📄 Firestore Emulator connected to 127.0.0.1:8080");
        }
-       if (storageInstance && !storageInstance?.emulatorConfig) {
+       if (storageInstance && !(storageInstance as any)?.emulatorConfig) {
             connectStorageEmulator(storageInstance, "127.0.0.1", 9199);
             console.log("📦 Storage Emulator connected to 127.0.0.1:9199");
        }
-        if (functionsInstance && !functionsInstance?.emulatorConfig) {
+        if (functionsInstance && !(functionsInstance as any)?.emulatorConfig) {
              connectFunctionsEmulator(functionsInstance, "127.0.0.1", 5001);
              console.log("🔧 Functions Emulator connected to 127.0.0.1:5001");
         }
@@ -115,6 +180,7 @@ if (
 
 // Export the instances, handling potential null cases if initialization failed
 export const auth = authInstance;
+export { signInWithEmailAndPassword, createUserWithEmailAndPassword };
 export const db = dbInstance;
 export const storage = storageInstance;
 export const functions = functionsInstance;

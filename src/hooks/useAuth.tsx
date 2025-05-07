@@ -4,6 +4,18 @@
 
 import * as React from 'react';
 import { type User, onAuthStateChanged } from 'firebase/auth'; // Use Firebase types
+
+// Custom error for when a user profile is not found
+export class ProfileNotFoundError extends Error {
+  public readonly code: string;
+  constructor(message: string) {
+    super(message);
+    this.name = "ProfileNotFoundError";
+    this.code = "PROFILE_NOT_FOUND";
+    // Ensure 'this' is correct for Error subclasses in older JS environments if needed
+    // Object.setPrototypeOf(this, ProfileNotFoundError.prototype);
+  }
+}
 import { auth, db } from '@/lib/firebase/client'; // Import Firebase instances
 import { doc, onSnapshot, type DocumentData, type Timestamp } from 'firebase/firestore';
 import type { UserProfile } from '@/types/user';
@@ -56,6 +68,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         unsubscribeProfile = null;
       }
 
+      // Check for admin user
+      if (firebaseUser && firebaseUser.email && firebaseUser.email.endsWith('@admin.com')) {
+        console.log(`AuthProvider: Admin user detected (Email: ${firebaseUser.email}), bypassing profile fetch.`);
+        setUser(firebaseUser); // User is already set above, but ensure it's here for clarity
+        setUserProfile(null); // Admin users don't need a Firestore profile
+        setIsAdmin(true);
+        setLoading(false);
+        setError(null);
+        return; // Skip Firestore profile fetching for admins
+      }
+
       if (firebaseUser && db) {
         console.log(`AuthProvider: User detected (UID: ${firebaseUser.uid}), setting up profile listener...`);
         const userDocRef = doc(db, 'users', firebaseUser.uid);
@@ -66,12 +89,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           if (docSnap.exists()) {
             const profileData = docSnap.data() as DocumentData;
-            const convertTimestampToDate = (timestamp: any): Date | null => {
-              if (timestamp && typeof timestamp.toDate === 'function') {
-                return timestamp.toDate();
-              }
-              return null;
-            };
 
             const profile: UserProfile = {
               uid: firebaseUser.uid,
@@ -79,16 +96,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               firstName: profileData.firstName || '',
               lastName: profileData.lastName || '',
               phone: profileData.phone || '',
-              dob: convertTimestampToDate(profileData.dob),
+              dob: profileData.dob || null,
               bloodGroup: profileData.bloodGroup,
               gender: profileData.gender,
               role: profileData.role,
-              createdAt: convertTimestampToDate(profileData.createdAt),
-              updatedAt: convertTimestampToDate(profileData.updatedAt),
-              lastDonationDate: convertTimestampToDate(profileData.lastDonationDate),
+              createdAt: profileData.createdAt || null,
+              updatedAt: profileData.updatedAt || null,
+              lastDonationDate: profileData.lastDonationDate || null,
               medicalConditions: profileData.medicalConditions || null,
               isEligible: profileData.isEligible ?? false,
-              nextEligibleDate: convertTimestampToDate(profileData.nextEligibleDate),
+              nextEligibleDate: profileData.nextEligibleDate || null,
               totalDonations: profileData.totalDonations || 0,
             };
             setUserProfile(profile);
@@ -98,7 +115,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.warn(`AuthProvider: User document not found for UID: ${firebaseUser.uid}`);
             setUserProfile(null);
             setIsAdmin(false);
-            setError(new Error("User profile data not found."));
+            // For non-admin users, if profile is not found, it's an error.
+            setError(new ProfileNotFoundError("User profile data not found."));
           }
           setLoading(false);
         }, (profileError) => {

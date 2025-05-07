@@ -41,39 +41,36 @@ export default function DashboardRedirectPage() {
             return;
         }
 
-        // User is logged in, check profile
-        if (!userProfile) {
-            // This might happen if profile fetch failed or is still loading
+        // Check if user is admin by email
+        const isAdmin = user?.email?.endsWith('@admin.com'); // Adjust email pattern as needed
+        
+        if (isAdmin) {
+            setStatusMessage("Admin detected. Redirecting...");
+            console.log(`DashboardRedirectPage: Admin user detected. Redirecting...`);
+            router.replace('/dashboard/admin');
+        } else if (!userProfile) {
+            // For non-admin users, still check profile
             console.warn(`DashboardRedirectPage: User authenticated (UID: ${user.uid}) but profile not available yet.`);
             setStatusMessage("Fetching profile data...");
-             // If there's an authError it likely includes the profile fetch error, otherwise wait.
             if (!authError) {
                   const profileCheckTimeout = setTimeout(() => {
-                       if (isMounted && !userProfile) { // Re-check profile after timeout
+                       if (isMounted && !userProfile) {
                             console.error("DashboardRedirectPage: Profile still missing after delay, possibly failed silently. Redirecting with error.");
                             setRedirectError("Failed to load user profile data after login.");
                             setStatusMessage("Profile load failed.");
-                            // Don't automatically redirect here, let error display handle it
                        }
-                  }, 5000); // Wait 5 seconds
-
-                  return () => clearTimeout(profileCheckTimeout); // Cleanup timeout
+                  }, 5000);
+                  return () => clearTimeout(profileCheckTimeout);
             } else {
-                 // If authError is already set (likely profile load error), let the error display handle it
                  console.error("DashboardRedirectPage: Profile missing and authError present:", authError);
-                 setRedirectError(authError.message || "Failed to load user profile data.");
+                 setRedirectError((authError as Error).message || "Failed to load user profile data.");
                  setStatusMessage("Profile load error.");
             }
-
         } else {
-            // Profile exists, redirect based on role
+            // For non-admin users with profile
             setStatusMessage(`User role is ${userProfile.role}. Redirecting...`);
             console.log(`DashboardRedirectPage: User role is ${userProfile.role}. Redirecting...`);
-            if (userProfile.role === 'admin') {
-                router.replace('/dashboard/admin');
-            } else {
-                router.replace('/dashboard/user');
-            }
+            router.replace('/dashboard/user');
         }
 
         return () => {

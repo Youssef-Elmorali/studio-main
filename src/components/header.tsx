@@ -73,9 +73,7 @@ export function Header() {
      ];
 
   } else if (isLoggedIn) {
-    // User Dashboard Link
-    authItems.push({ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, key: 'user-dash' }); // Point to the redirector
-    mobileAuthItems.push({ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, key: 'user-dash-mobile' }); // Point to the redirector
+    
 
     // Admin Panel Link (if admin)
     if (isAdmin) {
@@ -84,10 +82,12 @@ export function Header() {
     }
 
     // Profile Link
-    authItems.push({ href: "/profile", label: "Profile", icon: UserCircle, key: 'profile' });
-    mobileAuthItems.push({ href: "/profile", label: "Profile", icon: UserCircle, key: 'profile-mobile' });
-
-    // Logout Button
+    // authItems.push({ href: "/profile", label: "Profile", icon: UserCircle, key: 'profile' });
+    // mobileAuthItems.push({ href: "/profile", label: "Profile", icon: UserCircle, key: 'profile-mobile' });
+// Dashboard Link
+    authItems.push({ href: "/dashboard/admin", label: "dashboard", icon: UserCircle, key: 'dashboard' });
+    mobileAuthItems.push({ href: "/dashboard/admin", label: "dashboard", icon: UserCircle, key: 'dashboard-mobile' });
+    // Logout Link
     authItems.push({ key: 'logout', element: <Button onClick={handleLogout} variant="outline" size="sm"><LogOut className="mr-1 h-4 w-4" /> Logout</Button> });
     mobileAuthItems.push({ key: 'logout-mobile', element: (
           <button onClick={handleLogout} className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground w-full text-left">

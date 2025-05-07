@@ -12,7 +12,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { auth } from '@/lib/firebase/client'; // Import Firebase auth instance
-import { signInWithEmailAndPassword, type AuthError } from 'firebase/auth'; // Import Firebase auth functions
+import { signInWithEmailAndPassword, type AuthError, type Auth } from 'firebase/auth'; // Import Firebase auth functions
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -53,8 +53,9 @@ export default function LoginPage() {
             throw new Error("Firebase configuration error: API Key seems missing. Check console and setup instructions.");
        }
        // Check if essential methods exist (helps catch partial initialization)
-       if (typeof auth.signInWithEmailAndPassword !== 'function') {
-           console.error("Firebase Auth service is not initialized correctly. Essential functions missing.");
+       // Ensure auth instance is properly typed and imported functions are available
+       if (!auth || typeof signInWithEmailAndPassword !== 'function') { // Corrected check for imported function
+           console.error("Firebase Auth service is not initialized correctly or essential function 'signInWithEmailAndPassword' is missing.");
            throw new Error("Firebase Auth is not configured correctly. Please check setup instructions in src/lib/firebase/client.ts.");
        }
 
@@ -63,13 +64,15 @@ export default function LoginPage() {
       toast({ title: "Login Successful", description: "Welcome back!" });
        // Redirect based on user role after successful login
        const user = auth.currentUser;
-       if (user) {
-         // Check if user is admin (this would require fetching user profile)
-         // For now redirect to dashboard which will handle role-based routing
-         router.push('/dashboard');
+       if (user && user.email?.endsWith('@qatrah.com')) {
+         // Redirect to admin dashboard for admin emails
+         router.push('/dashboard/admin');
+       } else if (user) {
+         // Regular users go to profile
+         router.push('/profile');
        } else {
          // Fallback if user object is not available immediately
-         setTimeout(() => router.push('/dashboard'), 500);
+         setTimeout(() => router.push('/profile'), 500);
        }
 
     } catch (err: any) {

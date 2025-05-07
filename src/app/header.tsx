@@ -29,7 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export function Header() {
-  const { user, isAdmin, loading, supabase } = useAuth(); // Get client from hook
+  const { user, isAdmin, loading } = useAuth(); // Get auth state from hook
   const router = useRouter();
   const { toast } = useToast();
 
@@ -37,13 +37,8 @@ export function Header() {
   const notificationCount = isLoggedIn ? 3 : 0; // Placeholder
 
   const handleLogout = async () => {
-     if (!supabase) { // Check if client is available
-          toast({ title: "Logout Failed", description: "Authentication service unavailable.", variant: "destructive" });
-          return;
-     }
     try {
-      const { error } = await supabase.auth.signOut(); // Use Supabase signout
-      if (error) throw error;
+      await signOut(auth); // Use Firebase sign out
       toast({ title: "Logged out successfully." });
       router.push('/'); // Redirect to home page
       router.refresh(); // Force refresh to update layout state
@@ -74,16 +69,15 @@ export function Header() {
 
   } else if (isLoggedIn) {
     if (isAdmin) {
-      authItems.push({ href: "/dashboard/admin", label: "Admin Panel", icon: LayoutDashboard, key: 'admin-dash' });
-       mobileAuthItems.push({ href: "/dashboard/admin", label: "Admin Panel", icon: LayoutDashboard, key: 'admin-dash-mobile' });
+      authItems.push({ href: "/dashboard/admin", label: "Dashboard", icon: LayoutDashboard, key: 'dashboard' });
+      mobileAuthItems.push({ href: "/dashboard/admin", label: "Dashboard", icon: LayoutDashboard, key: 'dashboard-mobile' });
+    } else {
+      authItems.push({ href: "/dashboard/user", label: "Dashboard", icon: LayoutDashboard, key: 'user-dash' });
+      mobileAuthItems.push({ href: "/dashboard/user", label: "Dashboard", icon: LayoutDashboard, key: 'user-dash-mobile' });
     }
-    // Always show user dashboard and profile links if logged in
-    authItems.push({ href: "/dashboard/user", label: "Dashboard", icon: LayoutDashboard, key: 'user-dash' });
-    authItems.push({ href: "/profile", label: "Profile", icon: UserCircle, key: 'profile' });
     authItems.push({ key: 'logout', element: <Button onClick={handleLogout} variant="outline" size="sm"><LogOut className="mr-1 h-4 w-4" /> Logout</Button> });
 
-     mobileAuthItems.push({ href: "/dashboard/user", label: "Dashboard", icon: LayoutDashboard, key: 'user-dash-mobile' });
-     mobileAuthItems.push({ href: "/profile", label: "Profile", icon: UserCircle, key: 'profile-mobile' });
+
      mobileAuthItems.push({ key: 'logout-mobile', element: (
           <button onClick={handleLogout} className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground w-full text-left">
              <LogOut className="h-5 w-5" />
