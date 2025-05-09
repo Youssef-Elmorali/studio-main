@@ -1,9 +1,8 @@
-
 "use client";
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Droplets, UserCircle, HeartHandshake, Search, LogIn, UserPlus, Bell, LayoutDashboard, LogOut, Loader2 } from 'lucide-react';
+import { Droplets, UserCircle, HeartHandshake, Search, LogIn, UserPlus, Bell, LayoutDashboard, LogOut, Loader2, User, Calendar } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -25,14 +24,16 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from '@/hooks/useAuth'; // Use Firebase-based hook
 import { auth } from '@/lib/firebase/client'; // Import Firebase auth instance
 import { signOut } from 'firebase/auth'; // Import Firebase sign out function
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { cn } from '@/lib/utils'; // Import cn
+import { NotificationsDropdown } from '@/components/notifications-dropdown';
 
 export function Header() {
   const { user, userProfile, isAdmin, loading } = useAuth(); // Get user, profile, and admin status
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
 
   const isLoggedIn = !!user;
@@ -54,10 +55,13 @@ export function Header() {
     }
   };
 
-  const navItems = [
-    { href: "/donate", label: "Find Donation", icon: Search },
-    { href: "/request", label: "Request Blood", icon: HeartHandshake },
-    { href: "/campaigns", label: "Campaigns", icon: HeartHandshake },
+  const navigation = [
+    { name: 'Home', href: '/' },
+    { name: 'Find Donation', href: '/find-donation' },
+    { name: 'Request Blood', href: '/request-blood' },
+    { name: 'Campaigns', href: '/campaigns', icon: Calendar },
+    { name: 'About', href: '/about' },
+    { name: 'Contact', href: '/contact' },
   ];
 
   let authItems = [];
@@ -65,49 +69,74 @@ export function Header() {
 
   if (loading) {
     authItems = [
-        { key: 'loading1', element: <Button variant="ghost" size="icon" disabled className="w-8 h-8 animate-pulse bg-muted rounded-full"></Button> },
-        { key: 'loading2', element: <Button variant="ghost" size="icon" disabled className="w-8 h-8 animate-pulse bg-muted rounded-full"></Button> },
+      <Button key="loading" variant="ghost" disabled>
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </Button>
     ];
-     mobileAuthItems = [
-        { key: 'loading-mobile', element: <div className="h-8 w-full bg-muted rounded animate-pulse"></div> }
-     ];
-
   } else if (isLoggedIn) {
+    const welcomeName = userProfile?.firstName || user.email?.split('@')[0] || 'User';
     
+    authItems = [
+      <NotificationsDropdown key="notifications" />,
+      <div key="welcome" className="hidden md:flex items-center space-x-2 text-sm text-muted-foreground">
+        <span>Welcome, {welcomeName}!</span>
+      </div>,
+      isAdmin ? (
+        <Button key="dashboard" variant="ghost" asChild>
+          <Link href="/dashboard/admin">
+            <LayoutDashboard className="h-4 w-4 mr-2" />
+            Dashboard
+          </Link>
+        </Button>
+      ) : (
+        <Button key="profile" variant="ghost" asChild>
+          <Link href="/profile">
+            <User className="h-4 w-4 mr-2" />
+            Profile
+          </Link>
+        </Button>
+      ),
+      <Button key="logout" variant="ghost" onClick={handleLogout}>
+        Logout
+      </Button>
+    ];
 
-    // Admin Panel Link (if admin)
-    if (isAdmin) {
-      authItems.push({ href: "/dashboard/admin", label: "Admin", icon: LayoutDashboard, key: 'admin-dash' });
-       mobileAuthItems.push({ href: "/dashboard/admin", label: "Admin Panel", icon: LayoutDashboard, key: 'admin-dash-mobile' });
-    }
-
-    // Profile Link
-    // authItems.push({ href: "/profile", label: "Profile", icon: UserCircle, key: 'profile' });
-    // mobileAuthItems.push({ href: "/profile", label: "Profile", icon: UserCircle, key: 'profile-mobile' });
-// Dashboard Link
-    authItems.push({ href: "/dashboard/admin", label: "dashboard", icon: UserCircle, key: 'dashboard' });
-    mobileAuthItems.push({ href: "/dashboard/admin", label: "dashboard", icon: UserCircle, key: 'dashboard-mobile' });
-    // Logout Link
-    authItems.push({ key: 'logout', element: <Button onClick={handleLogout} variant="outline" size="sm"><LogOut className="mr-1 h-4 w-4" /> Logout</Button> });
-    mobileAuthItems.push({ key: 'logout-mobile', element: (
-          <button onClick={handleLogout} className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground w-full text-left">
-             <LogOut className="h-5 w-5" />
+    mobileAuthItems = [
+      <NotificationsDropdown key="notifications" />,
+      isAdmin ? (
+        <Link key="dashboard-mobile" href="/dashboard/admin" className="flex items-center px-4 py-2 text-sm">
+          <LayoutDashboard className="h-4 w-4 mr-2" />
+          Dashboard
+        </Link>
+      ) : (
+        <Link key="profile-mobile" href="/profile" className="flex items-center px-4 py-2 text-sm">
+          <User className="h-4 w-4 mr-2" />
+          Profile
+        </Link>
+      ),
+      <button key="logout-mobile" onClick={handleLogout} className="flex items-center px-4 py-2 text-sm">
              Logout
           </button>
-      ) });
-
-
+    ];
   } else {
     authItems = [
-      { href: "/auth/login", label: "Login", icon: LogIn, key: 'login' },
-      { href: "/auth/signup", label: "Sign Up", icon: UserPlus, key: 'signup' },
+      <Button key="login" variant="ghost" asChild>
+        <Link href="/auth/login">Login</Link>
+      </Button>,
+      <Button key="signup" asChild>
+        <Link href="/auth/signup">Sign Up</Link>
+      </Button>
     ];
+
      mobileAuthItems = [
-        { href: "/auth/login", label: "Login", icon: LogIn, key: 'login-mobile' },
-        { href: "/auth/signup", label: "Sign Up", icon: UserPlus, key: 'signup-mobile' },
+      <Link key="login-mobile" href="/auth/login" className="flex items-center px-4 py-2 text-sm">
+        Login
+      </Link>,
+      <Link key="signup-mobile" href="/auth/signup" className="flex items-center px-4 py-2 text-sm">
+        Sign Up
+      </Link>
      ];
   }
-
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -120,71 +149,24 @@ export function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-          {navItems.map((item) => (
+          {navigation.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="transition-colors hover:text-primary"
+              className={cn(
+                "transition-colors hover:text-primary flex items-center gap-1",
+                pathname === item.href ? "text-foreground" : "text-foreground/60"
+              )}
             >
-              {item.label}
+              {item.icon && <item.icon className="h-4 w-4" />}
+              {item.name}
             </Link>
           ))}
         </nav>
 
         {/* Desktop Auth, Greeting, Notification & Theme Buttons */}
-        <div className="hidden md:flex items-center space-x-3 ml-auto"> {/* Adjusted space-x */}
-          {isLoggedIn && !loading && userProfile && (
-             <span className="text-sm text-muted-foreground hidden lg:inline">
-                Hello, {userProfile.firstName || 'User'}!
-             </span>
-          )}
-          {isLoggedIn && !loading && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                 <Button variant="ghost" size="icon" className="relative rounded-full"> {/* Made icon buttons round */}
-                    <Bell className="h-5 w-5" />
-                    {notificationCount > 0 && (
-                      <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs rounded-full">
-                        {notificationCount}
-                      </Badge>
-                    )}
-                    <span className="sr-only">Notifications</span>
-                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                 {notificationCount > 0 ? (
-                     <>
-                        <DropdownMenuItem>New match for request #123</DropdownMenuItem>
-                        <DropdownMenuItem>Campaign "Summer Drive" starting soon</DropdownMenuItem>
-                        <DropdownMenuItem>Blood needed: O- at City Central</DropdownMenuItem>
-                     </>
-                 ) : (
-                     <DropdownMenuItem disabled>No new notifications</DropdownMenuItem>
-                 )}
-
-                <DropdownMenuSeparator />
-                 <DropdownMenuItem asChild>
-                    <Link href="/notifications">View All</Link>
-                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          {authItems.map((item) => {
-             if (item.element) {
-               return <React.Fragment key={item.key}>{item.element}</React.Fragment>;
-             }
-             return (
-                <Button key={item.key} variant={item.href === "/auth/signup" ? "default" : "outline"} size="sm" asChild className={cn(item.label === 'Admin' && 'bg-secondary hover:bg-secondary/80 text-secondary-foreground')}>
-                 <Link href={item.href}>
-                    {item.icon && <item.icon className="mr-1 h-4 w-4" /> }
-                    {item.label}
-                  </Link>
-                </Button>
-             );
-           })}
+        <div className="hidden md:flex items-center space-x-3 ml-auto">
+          {authItems}
            <ThemeToggle />
         </div>
 
@@ -197,38 +179,8 @@ export function Header() {
              </>
            )}
           {isLoggedIn && !loading && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative rounded-full"> {/* Made icon buttons round */}
-                      <Bell className="h-5 w-5" />
-                      {notificationCount > 0 && (
-                        <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs rounded-full">
-                          {notificationCount}
-                        </Badge>
-                      )}
-                      <span className="sr-only">Notifications</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                 <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                     {notificationCount > 0 ? (
-                       <>
-                         <DropdownMenuItem>New match for request #123</DropdownMenuItem>
-                         <DropdownMenuItem>Campaign "Summer Drive" starting soon</DropdownMenuItem>
-                         <DropdownMenuItem>Blood needed: O- at City Central</DropdownMenuItem>
-                       </>
-                     ) : (
-                       <DropdownMenuItem disabled>No new notifications</DropdownMenuItem>
+            <ThemeToggle />
                      )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/notifications">View All</Link>
-                    </DropdownMenuItem>
-                 </DropdownMenuContent>
-              </DropdownMenu>
-           )}
-          <ThemeToggle />
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -246,19 +198,14 @@ export function Header() {
                   </SheetTitle>
                </SheetHeader>
               <nav className="grid gap-6 text-lg font-medium">
-                {isLoggedIn && !loading && userProfile && (
-                  <span className="text-sm text-muted-foreground px-2.5">
-                     Hello, {userProfile.firstName || 'User'}!
-                  </span>
-                )}
-                {navItems.map((item) => (
+                {navigation.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
                     className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                   >
-                     <item.icon className="h-5 w-5" />
-                    {item.label}
+                     {item.icon && <item.icon className="h-5 w-5" />}
+                     {item.name}
                   </Link>
                 ))}
                  <DropdownMenuSeparator />
@@ -272,7 +219,6 @@ export function Header() {
                               href={item.href}
                               className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                           >
-                              {item.icon && <item.icon className="h-5 w-5" /> }
                               {item.label}
                           </Link>
                       );

@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { HelpCircle } from 'lucide-react';
@@ -63,7 +62,7 @@ export default function FAQPage() {
               <AccordionItem value="q7">
                 <AccordionTrigger className="text-lg font-semibold hover:text-primary">How do I request blood?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                   Go to the <a href="/request" className="text-primary underline hover:no-underline">Request Blood</a> page and fill out the form with patient details, required blood type, urgency, and location. Submitting a request helps notify potential donors and centers, but doesn't guarantee immediate fulfillment.
+                   Go to the <a href="/request-blood" className="text-primary underline hover:no-underline">Request Blood</a> page and fill out the form with patient details, required blood type, urgency, and location. Submitting a request helps notify potential donors and centers, but doesn't guarantee immediate fulfillment.
                 </AccordionContent>
               </AccordionItem>
 

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -6,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Users, Droplets, Target, Activity, Settings, PenSquare, Trash2, Loader2, AlertCircle, Eye, Check } from "lucide-react";
+import { Users, Droplets, Target, Activity, Settings, PenSquare, Trash2, Loader2, AlertCircle, Eye, Check, Droplet as DropletIcon, HeartHandshake, Calendar, Map, Bell, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth'; // Use Firebase auth hook
@@ -15,7 +14,7 @@ import { collection, getDocs, query, where, orderBy, limit, doc, updateDoc, dele
 import type { UserProfile } from '@/types/user';
 import type { BloodRequest } from '@/types/blood-request';
 import type { Campaign } from '@/types/campaign'; // Add campaign type
-import { format, isValid } from 'date-fns';
+import { format, isValid, formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -29,6 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { NotificationsDropdown } from '@/components/notifications-dropdown';
 
 
 // --- Component ---
@@ -37,12 +37,64 @@ export default function AdminDashboardPage() {
   const { toast } = useToast();
   const { user, userProfile, isAdmin, loading: authLoading, error: authError } = useAuth();
 
-  const [stats, setStats] = React.useState({ totalUsers: 0, activeDonors: 0, bloodRequests: 0, activeCampaigns: 0 });
+  const [stats, setStats] = React.useState({
+    totalUsers: 0,
+    totalDonations: 0,
+    totalRequests: 0,
+    activeCampaigns: 0,
+    pendingRequests: 0,
+    recentNotifications: 0,
+  });
   const [recentUsers, setRecentUsers] = React.useState<UserProfile[]>([]);
   const [pendingRequests, setPendingRequests] = React.useState<BloodRequest[]>([]);
   const [loadingData, setLoadingData] = React.useState(true); // Start true until data is loaded or admin check fails
   const [fetchError, setFetchError] = React.useState<string | null>(null);
   const [actionLoading, setActionLoading] = React.useState<string | null>(null);
+  const [systemStatus, setSystemStatus] = React.useState({
+    activeUsers: 0,
+    pendingNotifications: 0,
+    systemHealth: 'operational'
+  });
+  const [recentActivities, setRecentActivities] = React.useState<any[]>([]);
+
+  const statsCards = [
+    {
+      title: "Total Users",
+      value: stats.totalUsers,
+      description: "Active donors and recipients",
+      icon: Users,
+      color: "text-blue-500",
+      bgColor: "bg-blue-100",
+      link: "/dashboard/admin/users"
+    },
+    {
+      title: "Total Donations",
+      value: stats.totalDonations,
+      description: "Successful blood donations",
+      icon: Droplets,
+      color: "text-red-500",
+      bgColor: "bg-red-100",
+      link: "/dashboard/admin/donations"
+    },
+    {
+      title: "Blood Requests",
+      value: stats.totalRequests,
+      description: "Active blood requests",
+      icon: HeartHandshake,
+      color: "text-pink-500",
+      bgColor: "bg-pink-100",
+      link: "/dashboard/admin/requests"
+    },
+    {
+      title: "Active Campaigns",
+      value: stats.activeCampaigns,
+      description: "Ongoing donation campaigns",
+      icon: Calendar,
+      color: "text-green-500",
+      bgColor: "bg-green-100",
+      link: "/dashboard/admin/campaigns"
+    }
+  ];
 
   // Check admin status and fetch data
   React.useEffect(() => {
@@ -87,6 +139,8 @@ export default function AdminDashboardPage() {
         console.log("AdminDashboard: User is admin. Fetching data...");
         if (isMounted) {
             fetchData();
+            fetchSystemStatus();
+            fetchRecentActivities();
         }
     }
 
@@ -190,7 +244,12 @@ export default function AdminDashboardPage() {
               }
 
 
-              setStats({ totalUsers, activeDonors, bloodRequests: bloodRequestsCount, activeCampaigns });
+              setStats({
+                totalUsers,
+                activeDonors,
+                pendingRequests: bloodRequestsCount,
+                upcomingCampaigns: activeCampaigns,
+              });
               console.log("AdminDashboard: Firestore data fetched successfully.");
 
         } catch (err: any) {
@@ -202,6 +261,77 @@ export default function AdminDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Removed db dependency, assuming it's stable
 
+  // Add this inside fetchData function after other data fetching
+  const fetchSystemStatus = async () => {
+    try {
+      // Get active users count
+      const activeUsersQuery = query(
+        collection(db, 'users'),
+        where('lastActive', '>=', new Date(Date.now() - 5 * 60 * 1000)) // Users active in last 5 minutes
+      );
+      const activeUsersSnapshot = await getDocs(activeUsersQuery);
+      
+      // Get pending notifications count
+      const notificationsQuery = query(
+        collection(db, 'notifications'),
+        where('read', '==', false)
+      );
+      const notificationsSnapshot = await getDocs(notificationsQuery);
+
+      setSystemStatus({
+        activeUsers: activeUsersSnapshot.size,
+        pendingNotifications: notificationsSnapshot.size,
+        systemHealth: 'operational'
+      });
+    } catch (error) {
+      console.error('Error fetching system status:', error);
+    }
+  };
+
+  const fetchRecentActivities = async () => {
+    try {
+      // Fetch recent blood requests
+      const recentRequestsQuery = query(
+        collection(db, 'blood_requests'),
+        orderBy('createdAt', 'desc'),
+        limit(3)
+      );
+      const requestsSnapshot = await getDocs(recentRequestsQuery);
+      
+      // Fetch recent donations
+      const recentDonationsQuery = query(
+        collection(db, 'donations'),
+        orderBy('createdAt', 'desc'),
+        limit(3)
+      );
+      const donationsSnapshot = await getDocs(recentDonationsQuery);
+
+      // Combine and sort activities
+      const activities = [
+        ...requestsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          type: 'request',
+          title: 'New Blood Request',
+          description: `${doc.data().bloodType} blood type requested`,
+          time: formatDistanceToNow(doc.data().createdAt.toDate(), { addSuffix: true }),
+          createdAt: doc.data().createdAt
+        })),
+        ...donationsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          type: 'donation',
+          title: 'Donation Completed',
+          description: `${doc.data().bloodType} blood type donated`,
+          time: formatDistanceToNow(doc.data().createdAt.toDate(), { addSuffix: true }),
+          createdAt: doc.data().createdAt
+        }))
+      ].sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate())
+       .slice(0, 3);
+
+      setRecentActivities(activities);
+    } catch (error) {
+      console.error('Error fetching recent activities:', error);
+    }
+  };
 
   // --- Action Handlers ---
   const handleApproveRequest = async (requestId: string) => {
@@ -304,226 +434,152 @@ export default function AdminDashboardPage() {
 
   // Render actual admin dashboard content only if admin and no errors
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-primary">Admin Dashboard</h1>
-
-      {/* Key Statistics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-         {/* Stat Cards */}
-        <Card className="shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-          </CardContent>
-        </Card>
-         <Card className="shadow-md">
-           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">Eligible Donors</CardTitle>
-             <Droplets className="h-4 w-4 text-muted-foreground" />
-           </CardHeader>
-           <CardContent>
-             <div className="text-2xl font-bold">{stats.activeDonors}</div>
-              <p className="text-xs text-muted-foreground">Currently eligible to donate</p>
-           </CardContent>
-         </Card>
-         <Card className="shadow-md">
-           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">Active Blood Requests</CardTitle>
-             <Activity className="h-4 w-4 text-muted-foreground" />
-           </CardHeader>
-           <CardContent>
-             <div className="text-2xl font-bold">{stats.bloodRequests}</div>
-              <p className="text-xs text-muted-foreground">Active or Partially Fulfilled</p>
-           </CardContent>
-         </Card>
-         <Card className="shadow-md">
-           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">Ongoing Campaigns</CardTitle>
-             <Target className="h-4 w-4 text-muted-foreground" />
-           </CardHeader>
-           <CardContent>
-             <div className="text-2xl font-bold">{stats.activeCampaigns}</div>
-              <p className="text-xs text-muted-foreground">Currently running campaigns</p>
-           </CardContent>
-         </Card>
+    <div className="container mx-auto py-8 space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
+            Welcome back, {user?.displayName || 'Admin'}
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <NotificationsDropdown />
+          <Button onClick={() => router.push('/dashboard/admin/settings')}>
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Button>
+        </div>
       </div>
 
-       {/* Management Sections */}
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {/* Key Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {statsCards.map((stat, index) => (
+          <Card key={index} className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">
+                {stat.title}
+              </CardTitle>
+              <div className={`p-2 rounded-full ${stat.bgColor}`}>
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              </div>
+          </CardHeader>
+          <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {stat.description}
+              </p>
+              <Button 
+                variant="ghost" 
+                className="w-full mt-4"
+                onClick={() => router.push(stat.link)}
+              >
+                View Details
+              </Button>
+          </CardContent>
+        </Card>
+        ))}
+      </div>
 
-          {/* User Management Table */}
-          <Card className="shadow-md">
+      {/* Recent Activities and System Status */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
              <CardHeader>
-               <CardTitle className="flex items-center"><Users className="mr-2 h-5 w-5"/>User Management</CardTitle>
-               <CardDescription>View recent users. Manage roles or delete users.</CardDescription>
+            <CardTitle>Recent Activities</CardTitle>
+            <CardDescription>Latest updates and notifications</CardDescription>
              </CardHeader>
              <CardContent>
-                 {recentUsers.length > 0 ? (
-                     <Table>
-                       <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                       </TableHeader>
-                       <TableBody>
-                          {recentUsers.map(u => (
-                             <TableRow key={u.uid}>
-                                <TableCell className="font-medium">{u.firstName} {u.lastName}</TableCell>
-                                <TableCell>{u.email}</TableCell>
-                                <TableCell><Badge variant={u.role === 'admin' ? 'destructive' : 'secondary'} className="capitalize">{u.role}</Badge></TableCell>
-                                <TableCell className="text-right space-x-1">
-                                   <Button variant="ghost" size="icon" className="h-7 w-7" disabled>
-                                      <PenSquare className="h-4 w-4" />
-                                      <span className="sr-only">Edit User (Not Implemented)</span>
-                                   </Button>
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" disabled={actionLoading === `delete-user-${u.uid}`}>
-                                            {actionLoading === `delete-user-${u.uid}` ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4" />}
-                                             <span className="sr-only">Delete User Profile</span>
-                                          </Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                         <AlertDialogHeader>
-                                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                           <AlertDialogDescription>
-                                             This action will attempt to delete the user's profile from Firestore. Deleting their authentication record requires server-side action (e.g., using Firebase Admin SDK in a Cloud Function) and is not performed here. This cannot be undone.
-                                           </AlertDialogDescription>
-                                         </AlertDialogHeader>
-                                         <AlertDialogFooter>
-                                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                           <AlertDialogAction onClick={() => handleDeleteUser(u.uid)} className="bg-destructive hover:bg-destructive/90">
-                                             Delete User Profile
-                                           </AlertDialogAction>
-                                         </AlertDialogFooter>
-                                       </AlertDialogContent>
-                                    </AlertDialog>
-
-                                </TableCell>
-                             </TableRow>
-                          ))}
-                       </TableBody>
-                     </Table>
+            <div className="space-y-4">
+              {recentActivities.length > 0 ? (
+                recentActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-start space-x-4">
+                    <div className={`p-2 rounded-full ${
+                      activity.type === 'request' ? 'bg-red-100' :
+                      activity.type === 'donation' ? 'bg-green-100' :
+                      'bg-blue-100'
+                    }`}>
+                      {activity.type === 'request' ? (
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                      ) : activity.type === 'donation' ? (
+                        <Droplets className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Activity className="h-4 w-4 text-blue-500" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {activity.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {activity.description}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {activity.time}
+                      </p>
+                    </div>
+                  </div>
+                ))
                  ) : (
-                    <p className="text-muted-foreground text-center py-4">No recent users found.</p>
-                 )}
-                 <div className="mt-4 text-center">
-                     <Button variant="outline" size="sm" asChild disabled>
-                       <Link href="/admin/users">View All Users</Link>
-                    </Button>
+                <div className="text-center py-4 text-muted-foreground">
+                  No recent activities
+                </div>
+              )}
                  </div>
              </CardContent>
           </Card>
 
-          {/* Blood Request Management Table */}
-          <Card className="shadow-md">
+        <Card>
              <CardHeader>
-               <CardTitle className="flex items-center"><Activity className="mr-2 h-5 w-5"/>Blood Request Verification</CardTitle>
-               <CardDescription>Review and manage pending blood requests.</CardDescription>
+            <CardTitle>System Status</CardTitle>
+            <CardDescription>Current system health and metrics</CardDescription>
              </CardHeader>
              <CardContent>
-                  {pendingRequests.length > 0 ? (
-                     <Table>
-                        <TableHeader>
-                           <TableRow>
-                              <TableHead>Patient</TableHead>
-                              <TableHead>Blood Type</TableHead>
-                               <TableHead>Urgency</TableHead>
-                               <TableHead>Requested</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
-                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                           {pendingRequests.map(req => (
-                               <TableRow key={req.id}>
-                                  <TableCell className="font-medium">{req.patientName}</TableCell>
-                                  <TableCell><Badge variant="secondary">{req.requiredBloodGroup}</Badge></TableCell>
-                                   <TableCell><Badge variant={req.urgency === 'Critical' ? 'destructive' : req.urgency === 'High' ? 'default' : 'outline'} className="capitalize">{req.urgency}</Badge></TableCell>
-                                  <TableCell>{formatDateSafe(req.createdAt)}</TableCell>
-                                  <TableCell className="text-right space-x-1">
-                                     <Button variant="outline" size="sm" className="h-7 px-2 border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => handleApproveRequest(req.id!)} disabled={actionLoading === `approve-${req.id}`}>
-                                         {actionLoading === `approve-${req.id}` ? <Loader2 className="h-3 w-3 animate-spin mr-1"/> : <Check className="h-3 w-3 mr-1"/>} Approve
-                                      </Button>
-                                       <AlertDialog>
-                                          <AlertDialogTrigger asChild>
-                                              <Button variant="destructive" size="sm" className="h-7 px-2" disabled={actionLoading === `reject-${req.id}`}>
-                                                   {actionLoading === `reject-${req.id}` ? <Loader2 className="h-3 w-3 animate-spin mr-1"/> : <Trash2 className="h-3 w-3 mr-1"/>} Reject
-                                               </Button>
-                                          </AlertDialogTrigger>
-                                          <AlertDialogContent>
-                                             <AlertDialogHeader>
-                                                <AlertDialogTitle>Reject Request?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                   Are you sure you want to reject this blood request for {req.patientName} ({req.requiredBloodGroup})? This will change its status to 'Cancelled'.
-                                                </AlertDialogDescription>
-                                             </AlertDialogHeader>
-                                             <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleRejectRequest(req.id!)} className="bg-destructive hover:bg-destructive/90">
-                                                  Reject Request
-                                                </AlertDialogAction>
-                                             </AlertDialogFooter>
-                                           </AlertDialogContent>
-                                       </AlertDialog>
-                                        {/* Add View Details Button/Link */}
-                                       <Button variant="ghost" size="icon" className="h-7 w-7" disabled>
-                                            <Eye className="h-4 w-4" />
-                                            <span className="sr-only">View Request Details</span>
-                                        </Button>
-                                  </TableCell>
-                               </TableRow>
-                           ))}
-                        </TableBody>
-                     </Table>
-                 ) : (
-                      <p className="text-muted-foreground text-center py-4">No requests pending verification.</p>
-                 )}
-                 <div className="mt-4 text-center">
-                     <Button variant="outline" size="sm" asChild disabled>
-                       <Link href="/admin/requests">View All Requests</Link>
-                    </Button>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className={`p-2 rounded-full ${
+                    systemStatus.systemHealth === 'operational' ? 'bg-green-100' : 'bg-red-100'
+                  }`}>
+                    <Activity className={`h-4 w-4 ${
+                      systemStatus.systemHealth === 'operational' ? 'text-green-500' : 'text-red-500'
+                    }`} />
+                  </div>
+                  <span>System Status</span>
+                </div>
+                <span className={`text-sm ${
+                  systemStatus.systemHealth === 'operational' ? 'text-green-500' : 'text-red-500'
+                }`}>
+                  {systemStatus.systemHealth === 'operational' ? 'All Systems Operational' : 'System Issues Detected'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 rounded-full bg-blue-100">
+                    <Users className="h-4 w-4 text-blue-500" />
+                  </div>
+                  <span>Active Users</span>
+                </div>
+                <span className="text-sm">{systemStatus.activeUsers} online</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 rounded-full bg-purple-100">
+                    <Bell className="h-4 w-4 text-purple-500" />
+                  </div>
+                  <span>Pending Notifications</span>
+                </div>
+                <span className="text-sm">{systemStatus.pendingNotifications} unread</span>
+              </div>
                  </div>
-             </CardContent>
-          </Card>
-
-          {/* Campaign Management Placeholder */}
-           <Card className="shadow-md">
-             <CardHeader>
-               <CardTitle className="flex items-center"><Target className="mr-2 h-5 w-5"/>Campaign Management</CardTitle>
-               <CardDescription>Create, edit, and monitor donation campaigns.</CardDescription>
-             </CardHeader>
-             <CardContent className="text-center space-y-4">
-                <p className="text-muted-foreground">Campaign management tools coming soon.</p>
-                <Button variant="default" size="sm" asChild disabled>
-                     <Link href="/admin/campaigns/new">Create New Campaign</Link>
-                 </Button>
-                 <Button variant="outline" size="sm" asChild disabled>
-                     <Link href="/admin/campaigns">Manage Campaigns</Link>
-                 </Button>
-             </CardContent>
-           </Card>
-
-
-            {/* Site Settings / Other Tools Placeholder */}
-           <Card className="shadow-md">
-             <CardHeader>
-               <CardTitle className="flex items-center"><Settings className="mr-2 h-5 w-5"/>Site Settings & Tools</CardTitle>
-               <CardDescription>Manage global settings, content, and other administrative functions.</CardDescription>
-             </CardHeader>
-             <CardContent className="text-center space-y-4">
-                 <p className="text-muted-foreground">Links to content management, analytics, system health, etc. (Coming Soon)</p>
-                  <Button variant="outline" size="sm" asChild disabled>
-                     <Link href="/admin/settings">Go to Settings</Link>
+            <Button 
+              variant="outline" 
+              className="w-full mt-4"
+              onClick={() => router.push('/dashboard/admin/settings')}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Manage Settings
                   </Button>
              </CardContent>
            </Card>
-
        </div>
     </div>
   );

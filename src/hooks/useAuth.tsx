@@ -1,9 +1,20 @@
-
 // src/hooks/useAuth.tsx
 "use client";
 
 import * as React from 'react';
 import { type User, onAuthStateChanged } from 'firebase/auth'; // Use Firebase types
+import { 
+  doc, 
+  getDoc, 
+  onSnapshot, 
+  type DocumentData, 
+  type Timestamp, 
+  serverTimestamp, 
+  setDoc 
+} from 'firebase/firestore';
+import { useState, useEffect, useContext } from 'react';
+import { auth, db } from '@/lib/firebase/client'; // Import Firebase instances
+import type { UserProfile } from '@/types/user';
 
 // Custom error for when a user profile is not found
 export class ProfileNotFoundError extends Error {
@@ -16,9 +27,6 @@ export class ProfileNotFoundError extends Error {
     // Object.setPrototypeOf(this, ProfileNotFoundError.prototype);
   }
 }
-import { auth, db } from '@/lib/firebase/client'; // Import Firebase instances
-import { doc, onSnapshot, type DocumentData, type Timestamp } from 'firebase/firestore';
-import type { UserProfile } from '@/types/user';
 
 interface AuthContextType {
   user: User | null;
@@ -26,6 +34,7 @@ interface AuthContextType {
   isAdmin: boolean;
   loading: boolean;
   error: Error | null;
+  refreshUserProfile: (uid: string) => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +50,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<Error | null>(null);
 
+  // Add refreshUserProfile function
+  const refreshUserProfile = async (uid: string) => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (userDoc.exists()) {
+        setUserProfile(userDoc.data() as UserProfile);
+      }
+    } catch (error) {
+      console.error("Error refreshing user profile:", error);
+    }
+  };
+
   React.useEffect(() => {
     let isMounted = true;
     let unsubscribeProfile: (() => void) | null = null;
@@ -53,7 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return;
     }
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log(`AuthProvider: Auth state changed. User: ${firebaseUser?.uid ?? 'null'}`);
       if (!isMounted) return;
 
@@ -69,7 +90,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       // Check for admin user
-      if (firebaseUser && firebaseUser.email && firebaseUser.email.endsWith('@admin.com')) {
+      if (firebaseUser && firebaseUser.email && (
+        firebaseUser.email.endsWith('@admin.com') || 
+        firebaseUser.email.endsWith('@qatrah.com') ||
+        firebaseUser.email === 'qunicrom1@gmail.com'
+      )) {
         console.log(`AuthProvider: Admin user detected (Email: ${firebaseUser.email}), bypassing profile fetch.`);
         setUser(firebaseUser); // User is already set above, but ensure it's here for clarity
         setUserProfile(null); // Admin users don't need a Firestore profile
@@ -83,7 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log(`AuthProvider: User detected (UID: ${firebaseUser.uid}), setting up profile listener...`);
         const userDocRef = doc(db, 'users', firebaseUser.uid);
 
-        unsubscribeProfile = onSnapshot(userDocRef, (docSnap) => {
+        unsubscribeProfile = onSnapshot(userDocRef, async (docSnap) => {
           console.log(`AuthProvider: Profile snapshot received. Exists: ${docSnap.exists()}`);
           if (!isMounted) return;
 
@@ -109,14 +134,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               totalDonations: profileData.totalDonations || 0,
             };
             setUserProfile(profile);
-            setIsAdmin(profile.role === 'admin');
+            // Check both email domain and role for admin status
+            setIsAdmin(profile.role === 'admin' || 
+              (firebaseUser.email && (
+                firebaseUser.email.endsWith('@admin.com') || 
+                firebaseUser.email.endsWith('@qatrah.com') ||
+                firebaseUser.email === 'qunicrom1@gmail.com'
+              ))
+            );
             setError(null);
           } else {
-            console.warn(`AuthProvider: User document not found for UID: ${firebaseUser.uid}`);
+            console.warn(`AuthProvider: User document not found for UID: ${firebaseUser.uid}. Creating default profile...`);
+            try {
+              // Create a default profile for the user
+              const defaultProfile: UserProfile = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                firstName: '',
+                lastName: '',
+                phone: '',
+                dob: null,
+                bloodGroup: null,
+                gender: null,
+                role: 'donor', // Default role
+                createdAt: serverTimestamp() as Timestamp,
+                updatedAt: serverTimestamp() as Timestamp,
+                lastDonationDate: null,
+                medicalConditions: null,
+                isEligible: true,
+                nextEligibleDate: null,
+                totalDonations: 0,
+              };
+              
+              await setDoc(userDocRef, defaultProfile);
+              setUserProfile(defaultProfile);
+              setIsAdmin(false);
+              setError(null);
+            } catch (profileError) {
+              console.error(`AuthProvider: Error creating default profile:`, profileError);
             setUserProfile(null);
             setIsAdmin(false);
-            // For non-admin users, if profile is not found, it's an error.
-            setError(new ProfileNotFoundError("User profile data not found."));
+              setError(new ProfileNotFoundError("Failed to create user profile. Please try logging out and back in."));
+            }
           }
           setLoading(false);
         }, (profileError) => {
@@ -164,6 +223,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAdmin,
     loading,
     error,
+    refreshUserProfile,
   };
 
   // This return statement must be valid JSX.

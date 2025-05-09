@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from 'next/image';
 import { Droplets, Target, Users, HeartHandshake } from 'lucide-react';
@@ -78,13 +77,78 @@ export default function AboutPage() {
            </div>
       </section>
 
-       {/* Placeholder for Team Section */}
-      {/* <section id="our-team">
-        <h2 className="text-3xl font-semibold text-center mb-8">Meet the Team</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          Placeholder team members
+      <section id="our-team" className="py-12">
+        <h2 className="text-3xl font-bold text-center mb-12 text-primary flex items-center justify-center">
+          <Users className="mr-3 h-8 w-8"/> Meet Our Team
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Team Member 1 */}
+          <Card className="group hover:shadow-lg transition-all duration-300">
+            <CardHeader className="text-center pb-2">
+              <div className="w-24 h-24 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <span className="text-2xl font-bold text-primary">YM</span>
+              </div>
+              <CardTitle className="text-xl">Youssef Mohamed Abdelfattah Elmorali</CardTitle>
+              <CardDescription className="text-primary font-medium">Project Lead & FullStack Developer</CardDescription>
+            </CardHeader>
+          </Card>
+
+          {/* Team Member 2 */}
+          <Card className="group hover:shadow-lg transition-all duration-300">
+            <CardHeader className="text-center pb-2">
+              <div className="w-24 h-24 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <span className="text-2xl font-bold text-primary">AE</span>
+              </div>
+              <CardTitle className="text-xl">Ahmed Mohamed Abdelsalam Essa</CardTitle>
+              <CardDescription className="text-primary font-medium">Frontend Developer</CardDescription>
+            </CardHeader>
+          </Card>
+
+          {/* Team Member 3 */}
+          <Card className="group hover:shadow-lg transition-all duration-300">
+            <CardHeader className="text-center pb-2">
+              <div className="w-24 h-24 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <span className="text-2xl font-bold text-primary">BR</span>
+              </div>
+              <CardTitle className="text-xl">Bassant Mahmoud Mohamed Rakha</CardTitle>
+              <CardDescription className="text-primary font-medium">Backend Developer</CardDescription>
+            </CardHeader>
+          </Card>
+
+          {/* Team Member 4 */}
+          <Card className="group hover:shadow-lg transition-all duration-300">
+            <CardHeader className="text-center pb-2">
+              <div className="w-24 h-24 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <span className="text-2xl font-bold text-primary">GN</span>
+              </div>
+              <CardTitle className="text-xl">Gamila Omar Nasr Ali</CardTitle>
+              <CardDescription className="text-primary font-medium">UI/UX Designer</CardDescription>
+            </CardHeader>
+          </Card>
+
+          {/* Team Member 5 */}
+          <Card className="group hover:shadow-lg transition-all duration-300">
+            <CardHeader className="text-center pb-2">
+              <div className="w-24 h-24 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <span className="text-2xl font-bold text-primary">AG</span>
+              </div>
+              <CardTitle className="text-xl">Ahmed Samir Thabet Gad El Rabb</CardTitle>
+              <CardDescription className="text-primary font-medium">Backend Developer</CardDescription>
+            </CardHeader>
+          </Card>
+
+          {/* Team Member 6 */}
+          <Card className="group hover:shadow-lg transition-all duration-300">
+            <CardHeader className="text-center pb-2">
+              <div className="w-24 h-24 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <span className="text-2xl font-bold text-primary">MA</span>
+              </div>
+              <CardTitle className="text-xl">Mohamed Osama Awad Ali Awad</CardTitle>
+              <CardDescription className="text-primary font-medium">Frontend Developer</CardDescription>
+            </CardHeader>
+          </Card>
         </div>
-      </section> */}
+      </section>
 
     </div>
   );

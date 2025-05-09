@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -273,14 +272,16 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-56px)] py-12 px-4">
-      <Card className="w-full max-w-2xl mx-auto shadow-lg">
-        <CardHeader className="space-y-2 text-center">
+    <div className="flex items-center justify-center min-h-[calc(100vh-56px)] py-12 px-4 bg-gradient-to-b from-background to-muted/20">
+      <Card className="w-full max-w-2xl mx-auto shadow-lg border-2">
+        <CardHeader className="space-y-2 text-center pb-8">
            <div className="flex justify-center mb-4">
-             <UserPlus className="w-12 h-12 text-primary" />
+             <div className="rounded-full bg-primary/10 p-3">
+               <UserPlus className="w-8 h-8 text-primary" />
+             </div>
            </div>
-          <CardTitle className="text-3xl font-bold">Create Your Account</CardTitle>
-          <CardDescription>Join our community and start saving lives today</CardDescription>
+          <CardTitle className="text-3xl font-bold tracking-tight">Create Your Account</CardTitle>
+          <CardDescription className="text-lg">Join our community and start saving lives today</CardDescription>
         </CardHeader>
         <CardContent>
            {error && (
@@ -290,62 +291,94 @@ export default function SignupPage() {
                  <AlertDescription>{error}</AlertDescription>
                </Alert>
              )}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
              <Controller
                name="role"
                control={control}
                render={({ field }) => (
-                 <div className="space-y-2">
+                 <div className="space-y-3">
                    <Label className="text-base font-semibold">Register As *</Label>
                     <RadioGroup
                      onValueChange={field.onChange}
                      value={field.value}
-                     className="flex flex-col sm:flex-row gap-4 pt-2"
+                     className="grid grid-cols-2 gap-4"
                    >
                       {roles.map((roleOption) => (
                         <div key={roleOption} className={cn(
-                           "flex items-center space-x-2 p-4 border rounded-md flex-1 cursor-pointer hover:bg-accent",
-                           field.value === roleOption && "bg-primary/10 border-primary ring-1 ring-primary"
+                           "flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200",
+                           field.value === roleOption 
+                             ? "bg-primary/10 border-primary ring-2 ring-primary/20" 
+                             : "hover:bg-accent/50"
                            )}>
-                           <RadioGroupItem value={roleOption} id={`role-${roleOption}`} />
+                           <RadioGroupItem value={roleOption} id={`role-${roleOption}`} className="h-5 w-5" />
                            <Label htmlFor={`role-${roleOption}`} className="text-lg font-medium cursor-pointer capitalize">
                                {roleOption}
                            </Label>
                         </div>
                       ))}
                    </RadioGroup>
-                   {errors.role && <p className="text-sm text-destructive">{errors.role.message}</p>}
+                   {errors.role && <p className="text-sm text-destructive mt-2">{errors.role.message}</p>}
                  </div>
                )}
              />
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div className="space-y-1">
-                 <Label htmlFor="firstName">First Name *</Label>
-                 <Input id="firstName" placeholder="John" {...register("firstName")} aria-invalid={errors.firstName ? "true" : "false"} disabled={loading} />
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="space-y-2">
+                 <Label htmlFor="firstName" className="text-base">First Name *</Label>
+                 <Input 
+                   id="firstName" 
+                   placeholder="John" 
+                   {...register("firstName")} 
+                   className="h-11"
+                   aria-invalid={errors.firstName ? "true" : "false"} 
+                   disabled={loading} 
+                 />
                  {errors.firstName && <p className="text-sm text-destructive">{errors.firstName.message}</p>}
                </div>
-               <div className="space-y-1">
-                 <Label htmlFor="lastName">Last Name *</Label>
-                 <Input id="lastName" placeholder="Doe" {...register("lastName")} aria-invalid={errors.lastName ? "true" : "false"} disabled={loading} />
+               <div className="space-y-2">
+                 <Label htmlFor="lastName" className="text-base">Last Name *</Label>
+                 <Input 
+                   id="lastName" 
+                   placeholder="Doe" 
+                   {...register("lastName")} 
+                   className="h-11"
+                   aria-invalid={errors.lastName ? "true" : "false"} 
+                   disabled={loading} 
+                 />
                  {errors.lastName && <p className="text-sm text-destructive">{errors.lastName.message}</p>}
                </div>
-               <div className="space-y-1">
-                 <Label htmlFor="email">Email Address *</Label>
-                 <Input id="email" type="email" placeholder="m@example.com" {...register("email")} aria-invalid={errors.email ? "true" : "false"} disabled={loading} />
+               <div className="space-y-2">
+                 <Label htmlFor="email" className="text-base">Email Address *</Label>
+                 <Input 
+                   id="email" 
+                   type="email" 
+                   placeholder="m@example.com" 
+                   {...register("email")} 
+                   className="h-11"
+                   aria-invalid={errors.email ? "true" : "false"} 
+                   disabled={loading} 
+                 />
                  {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
                </div>
-               <div className="space-y-1">
-                  <Label htmlFor="phone">Phone Number *</Label>
-                  <Input id="phone" type="tel" placeholder="(123) 456-7890" {...register("phone")} aria-invalid={errors.phone ? "true" : "false"} disabled={loading} />
+               <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-base">Phone Number *</Label>
+                  <Input 
+                    id="phone" 
+                    type="tel" 
+                    placeholder="(123) 456-7890" 
+                    {...register("phone")} 
+                    className="h-11"
+                    aria-invalid={errors.phone ? "true" : "false"} 
+                    disabled={loading} 
+                  />
                    {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
                 </div>
 
-                <div className="md:col-span-2 space-y-1">
-                   <Label>Date of Birth *</Label>
-                    <div className="grid grid-cols-3 gap-3">
+                <div className="md:col-span-2 space-y-2">
+                   <Label className="text-base">Date of Birth *</Label>
+                    <div className="grid grid-cols-3 gap-4">
                       <Select value={selectedYear} onValueChange={setSelectedYear} disabled={loading}>
-                        <SelectTrigger aria-label="Year of birth" id="dob-year">
+                        <SelectTrigger className="h-11" aria-label="Year of birth" id="dob-year">
                           <SelectValue placeholder="Year" />
                         </SelectTrigger>
                         <SelectContent>
@@ -357,7 +390,7 @@ export default function SignupPage() {
                         </SelectContent>
                       </Select>
                       <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!selectedYear || loading}>
-                         <SelectTrigger aria-label="Month of birth" id="dob-month">
+                         <SelectTrigger className="h-11" aria-label="Month of birth" id="dob-month">
                            <SelectValue placeholder="Month" />
                          </SelectTrigger>
                          <SelectContent>
@@ -369,7 +402,7 @@ export default function SignupPage() {
                          </SelectContent>
                       </Select>
                        <Select value={selectedDay} onValueChange={setSelectedDay} disabled={!selectedMonth || !selectedYear || loading}>
-                         <SelectTrigger aria-label="Day of birth" id="dob-day">
+                         <SelectTrigger className="h-11" aria-label="Day of birth" id="dob-day">
                            <SelectValue placeholder="Day" />
                          </SelectTrigger>
                          <SelectContent>
@@ -385,14 +418,14 @@ export default function SignupPage() {
                    {errors.dob && <p className="text-sm text-destructive pt-1">{errors.dob.message}</p>}
                 </div>
 
-                <div className="space-y-1">
-                  <Label htmlFor="blood-group">Blood Group *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="blood-group" className="text-base">Blood Group *</Label>
                   <Controller
                       name="bloodGroup"
                       control={control}
                       render={({ field }) => (
                           <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
-                              <SelectTrigger id="blood-group" aria-invalid={errors.bloodGroup ? "true" : "false"}>
+                              <SelectTrigger className="h-11" id="blood-group" aria-invalid={errors.bloodGroup ? "true" : "false"}>
                                   <SelectValue placeholder="Select Blood Group" />
                               </SelectTrigger>
                               <SelectContent>
@@ -405,14 +438,14 @@ export default function SignupPage() {
                   />
                    {errors.bloodGroup && <p className="text-sm text-destructive">{errors.bloodGroup.message}</p>}
                 </div>
-                <div className="space-y-1">
-                   <Label htmlFor="gender">Gender *</Label>
+                <div className="space-y-2">
+                   <Label htmlFor="gender" className="text-base">Gender *</Label>
                    <Controller
                        name="gender"
                        control={control}
                        render={({ field }) => (
                            <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value} disabled={loading}>
-                               <SelectTrigger id="gender" aria-invalid={errors.gender ? "true" : "false"}>
+                               <SelectTrigger className="h-11" id="gender" aria-invalid={errors.gender ? "true" : "false"}>
                                    <SelectValue placeholder="Select Gender" />
                                </SelectTrigger>
                                <SelectContent>
@@ -427,16 +460,16 @@ export default function SignupPage() {
                 </div>
              </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="password">Password *</Label>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-base">Password *</Label>
                    <div className="relative">
                        <Input
                           id="password"
                           type={showPassword ? "text" : "password"}
                           {...register("password")}
+                          className="h-11 pr-10"
                           aria-invalid={errors.password ? "true" : "false"}
-                          className="pr-10"
                           disabled={loading}
                        />
                         <Button
@@ -457,15 +490,15 @@ export default function SignupPage() {
                       <p className="text-xs text-muted-foreground">Min 8 chars, 1 number, 1 special character.</p>
                    )}
                 </div>
-                 <div className="space-y-1">
-                   <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                 <div className="space-y-2">
+                   <Label htmlFor="confirmPassword" className="text-base">Confirm Password *</Label>
                     <div className="relative">
                        <Input
                           id="confirmPassword"
                           type={showConfirmPassword ? "text" : "password"}
                           {...register("confirmPassword")}
+                          className="h-11 pr-10"
                           aria-invalid={errors.confirmPassword ? "true" : "false"}
-                           className="pr-10"
                            disabled={loading}
                        />
                        <Button
@@ -485,11 +518,11 @@ export default function SignupPage() {
               </div>
 
             {selectedRole === 'donor' && (
-              <div className="space-y-4 pt-4 border-t mt-6">
-                  <h3 className="text-lg font-semibold text-primary">Donor Information</h3>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                       <Label htmlFor="lastDonationDate">Last Donation Date (if applicable)</Label>
+              <div className="space-y-6 pt-6 border-t mt-6">
+                  <h3 className="text-xl font-semibold text-primary">Donor Information</h3>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                       <Label htmlFor="lastDonationDate" className="text-base">Last Donation Date (if applicable)</Label>
                        <Controller
                            name="lastDonationDate"
                            control={control}
@@ -499,7 +532,7 @@ export default function SignupPage() {
                                    <Button
                                      variant={"outline"}
                                      className={cn(
-                                       "w-full justify-start text-left font-normal",
+                                       "w-full h-11 justify-start text-left font-normal",
                                        !field.value && "text-muted-foreground"
                                      )}
                                      disabled={loading}
@@ -513,10 +546,10 @@ export default function SignupPage() {
                                      mode="single"
                                      selected={field.value ?? undefined}
                                      onSelect={(date) => field.onChange(date ?? null)}
-                                     disabled={(date) => date > new Date() || loading} // Prevent future dates & disable when loading
+                                     disabled={(date) => date > new Date() || loading}
                                      initialFocus
-                                     captionLayout="dropdown-buttons" // Use dropdowns for year/month
-                                     fromYear={currentYear - 5} // Example range: last 5 years
+                                     captionLayout="dropdown-buttons"
+                                     fromYear={currentYear - 5}
                                      toYear={currentYear}
                                    />
                                  </PopoverContent>
@@ -526,16 +559,22 @@ export default function SignupPage() {
                        {errors.lastDonationDate && <p className="text-sm text-destructive">{errors.lastDonationDate.message}</p>}
                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="medicalConditions">Any Medical Conditions?</Label>
-                      <Textarea id="medicalConditions" placeholder="Please list any conditions that might affect donation eligibility (e.g., heart condition, recent surgery, medications)..." {...register("medicalConditions")} disabled={loading}/>
+                    <div className="space-y-2">
+                      <Label htmlFor="medicalConditions" className="text-base">Any Medical Conditions?</Label>
+                      <Textarea 
+                        id="medicalConditions" 
+                        placeholder="Please list any conditions that might affect donation eligibility (e.g., heart condition, recent surgery, medications)..." 
+                        {...register("medicalConditions")} 
+                        className="min-h-[100px]"
+                        disabled={loading}
+                      />
                        {errors.medicalConditions && <p className="text-sm text-destructive">{errors.medicalConditions.message}</p>}
                       <p className="text-xs text-muted-foreground">This helps determine eligibility. Details are kept confidential.</p>
                     </div>
                </div>
             )}
 
-            <div className="flex items-start space-x-2 pt-4">
+            <div className="flex items-start space-x-3 pt-6">
                  <Controller
                      name="terms"
                      control={control}
@@ -545,7 +584,7 @@ export default function SignupPage() {
                              checked={field.value}
                              onCheckedChange={field.onChange}
                               aria-invalid={errors.terms ? "true" : "false"}
-                             className="mt-0.5"
+                             className="mt-1"
                               disabled={loading}
                          />
                      )}
@@ -558,14 +597,25 @@ export default function SignupPage() {
                  </div>
             </div>
 
-            <Button type="submit" className="w-full text-lg py-3" size="lg" disabled={loading || !auth || !db}> {/* Disable if loading or firebase services missing */}
-               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-               Create Account
+            <Button 
+              type="submit" 
+              className="w-full text-lg py-6 mt-8" 
+              size="lg" 
+              disabled={loading || !auth || !db}
+            >
+               {loading ? (
+                 <>
+                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                   Creating Account...
+                 </>
+               ) : (
+                 "Create Account"
+               )}
             </Button>
           </form>
-          <div className="mt-6 text-center text-sm">
+          <div className="mt-8 text-center text-sm">
             Already have an account?{" "}
-            <Link href="/auth/login" className="underline hover:text-primary">
+            <Link href="/auth/login" className="font-medium text-primary hover:underline">
               Log In
             </Link>
           </div>

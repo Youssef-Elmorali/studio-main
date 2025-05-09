@@ -1,4 +1,3 @@
-
 import type {Metadata} from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -9,6 +8,7 @@ import { Footer } from '@/components/footer'; // Corrected import path
 import { AuthProvider } from '@/hooks/useAuth'; // Import the Firebase AuthProvider
 import { ScrollToTop } from '@/components/scroll-to-top';
 import { ThemeProvider } from "@/components/theme-provider";
+import { MapsProvider } from '@/contexts/maps-context';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -40,6 +40,7 @@ export default function RootLayout({
             disableTransitionOnChange
          >
             <AuthProvider> {/* Wrap the application with Firebase AuthProvider */}
+              <MapsProvider>
               <Header />
               <main className="flex-grow pt-4 pb-8 px-4 md:px-6 lg:px-8">
                 {children}
@@ -47,6 +48,7 @@ export default function RootLayout({
               <Footer />
               <ScrollToTop />
               <Toaster />
+              </MapsProvider>
             </AuthProvider>
           </ThemeProvider>
       </body>

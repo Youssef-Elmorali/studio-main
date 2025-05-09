@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
@@ -67,7 +66,7 @@ export default function EligibilityPage() {
 
           <div className="text-center pt-4">
               <Button asChild>
-                 <Link href="/donate">Find a Donation Center to Ask Specific Questions</Link>
+                 <Link href="/find-donation">Find a Donation Center to Ask Specific Questions</Link>
               </Button>
           </div>
         </CardContent>

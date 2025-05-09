@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -145,7 +144,7 @@ export default function BloodBankDetailPage() {
                  <AlertDescription>{error}</AlertDescription>
                </Alert>
                <Button asChild variant="outline">
-                   <Link href="/donate"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Find Banks</Link>
+                   <Link href="/find-donation"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Find Banks</Link>
                </Button>
            </div>
        );
@@ -157,7 +156,7 @@ export default function BloodBankDetailPage() {
              <h1 className="text-2xl font-bold text-destructive mb-4">Blood Bank Not Found</h1>
              <p className="text-muted-foreground mb-6">The blood bank you are looking for could not be loaded.</p>
              <Button asChild variant="outline">
-               <Link href="/donate"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Find Banks</Link>
+               <Link href="/find-donation"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Find Banks</Link>
              </Button>
            </div>
          );
@@ -168,7 +167,7 @@ export default function BloodBankDetailPage() {
     <div className="container mx-auto py-12 px-4">
        <div className="mb-6">
            <Button variant="outline" size="sm" asChild>
-              <Link href="/donate"> {/* Link back to the main donation page */}
+              <Link href="/find-donation">
                  <ArrowLeft className="mr-2 h-4 w-4" /> Back to Find Banks
               </Link>
            </Button>

@@ -1,167 +1,123 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
-import "leaflet-defaulticon-compatibility";
-import type { LatLngExpression } from 'leaflet';
-import { Search, Loader2, AlertCircle } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import type { BloodBank } from '@/types/blood-bank'; // Import BloodBank type
-import { useToast } from '@/hooks/use-toast';
+import * as React from 'react';
+import { Card } from "@/components/ui/card";
+import { Loader2, MapPin, AlertCircle } from 'lucide-react';
+import { GoogleMap, Marker } from '@react-google-maps/api';
+import { useMaps } from '@/contexts/maps-context';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-
-// Component to change map view
-function ChangeView({ center, zoom }: { center: LatLngExpression, zoom: number }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [center, zoom, map]);
-  return null;
+interface Location {
+  id: string | number;
+  name: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  address: string;
+  isEmergency?: boolean;
 }
 
 interface MapViewProps {
-  banks: BloodBank[];
-  initialCenter?: LatLngExpression;
-  initialZoom?: number;
+  locations: Location[];
+  onLocationSelect?: (location: Location) => void;
+  center?: { lat: number; lng: number };
+  zoom?: number;
 }
 
-export function MapView({ banks, initialCenter = [31.9632, 35.9306], initialZoom = 7 }: MapViewProps) {
-  const [isClient, setIsClient] = useState(false);
-  const [currentCenter, setCurrentCenter] = useState<LatLngExpression>(initialCenter);
-  const [currentZoom, setCurrentZoom] = useState<number>(initialZoom);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+const containerStyle = {
+  width: '100%',
+  height: '100%',
+};
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+export default function MapView({ 
+  locations, 
+  onLocationSelect,
+  center = { lat: 30.0444, lng: 31.2357 }, // Default to Cairo
+  zoom = 12 
+}: MapViewProps) {
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [mapError, setMapError] = React.useState<string | null>(null);
+  const { isLoaded, loadError } = useMaps();
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-  const banksWithCoords = banks.filter(bank => bank.locationCoords?.lat && bank.locationCoords?.lng);
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
-
-  const handleSearch = useCallback(async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!searchQuery.trim()) {
-      // Reset to initial view or show all markers? Resetting for now.
-      setCurrentCenter(initialCenter);
-      setCurrentZoom(initialZoom);
-      setSearchError(null);
+  React.useEffect(() => {
+    if (!apiKey) {
+      setMapError("Google Maps API key is missing");
+      setIsLoading(false);
       return;
     }
 
-    if (!apiKey) {
-        setSearchError("Map search requires a Google Maps API Key to be configured.");
-        toast({
-            title: "Search Error",
-            description: "Map search functionality is limited without an API key.",
-            variant: "destructive",
-        });
-        return;
-    }
-
-    setIsLoading(true);
-    setSearchError(null);
-
-    try {
-      const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${apiKey}`;
-      const response = await fetch(geocodeUrl);
-      const data = await response.json();
-
-      if (data.status === 'OK' && data.results.length > 0) {
-        const { lat, lng } = data.results[0].geometry.location;
-        setCurrentCenter([lat, lng]);
-        setCurrentZoom(13); // Zoom in closer for specific location
-        toast({
-           title: "Location Found",
-           description: `Map centered on ${data.results[0].formatted_address}`,
-        });
-      } else if (data.status === 'ZERO_RESULTS') {
-        setSearchError("Location not found. Please try a different search term.");
-         toast({
-             title: "Search Error",
-             description: "Location not found.",
-             variant: "destructive",
-         });
-      } else {
-         console.error("Geocoding API Error:", data.status, data.error_message);
-         setSearchError(`Geocoding failed: ${data.error_message || data.status}`);
-         toast({
-              title: "Search Error",
-              description: `Could not find location: ${data.error_message || data.status}`,
-              variant: "destructive",
-          });
-      }
-    } catch (error) {
-      console.error("Error during geocoding fetch:", error);
-      setSearchError("An error occurred while searching for the location.");
-       toast({
-            title: "Search Error",
-            description: "An network error occurred during search.",
-            variant: "destructive",
-        });
-    } finally {
+    if (!locations.length) {
+      setMapError("No blood banks found in this area");
       setIsLoading(false);
+      return;
     }
-  }, [searchQuery, apiKey, initialCenter, initialZoom, toast]);
 
+    if (loadError) {
+      setMapError("Failed to load Google Maps. Please check your ad blocker settings.");
+      setIsLoading(false);
+      return;
+    }
 
-  if (!isClient) {
-    // Return a placeholder or skeleton while waiting for client-side rendering
+    setIsLoading(false);
+  }, [locations, apiKey, loadError]);
+
+  if (mapError) {
     return (
-        <div className="space-y-4 p-4 md:p-6 border rounded-lg bg-muted/50 mt-8">
-            <h3 className="text-lg font-semibold text-center mb-4">Map View</h3>
-            <div className="relative h-[400px] w-full bg-muted rounded-md flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                 <p className="ml-2 text-muted-foreground">Loading map...</p>
-            </div>
+      <Card className="h-[600px] flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
+          <p className="text-destructive">{mapError}</p>
+          <p className="text-muted-foreground">
+            {mapError.includes("ad blocker") 
+              ? "Please disable your ad blocker for this site to view the map."
+              : "Try adjusting your search filters."}
+          </p>
         </div>
+      </Card>
+    );
+  }
+
+  if (!isLoaded || isLoading) {
+    return (
+      <Card className="h-[600px] flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">Loading map...</p>
+        </div>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-6 border rounded-lg bg-muted/50 mt-8">
-       <h3 className="text-lg font-semibold text-center mb-4">Map View</h3>
-
-       
-
-      <div className="relative h-[450px] w-full bg-muted rounded-md overflow-hidden border">
-         {/* Use a key that forces remount only when necessary, like number of banks if markers change drastically */}
-         {/* Or better, control view changes internally with ChangeView component */}
-        <MapContainer
-            // No key needed here if ChangeView handles updates
-            center={currentCenter} // Controlled center state
-            zoom={currentZoom}      // Controlled zoom state
-            scrollWheelZoom={true} // Enable scroll wheel zoom
-            style={{ height: "100%", width: "100%" }}
-          >
-           <ChangeView center={currentCenter} zoom={currentZoom} />
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {banksWithCoords.map((bank) => (
-               bank.locationCoords && // Double check coords exist
-              <Marker key={bank.id} position={[bank.locationCoords.lat, bank.locationCoords.lng]}>
-                <Popup>
-                  <strong>{bank.name}</strong><br />
-                  {bank.location}<br />
-                   {bank.contactPhone && `Phone: ${bank.contactPhone}`}
-                   {/* TODO: Add link to bank detail page */}
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
-      </div>
-       <p className="text-xs text-muted-foreground text-center mt-2">
-          Map displays available blood bank locations.
-       </p>
-    </div>
+    <Card className="relative h-[600px] overflow-hidden">
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={center}
+        zoom={zoom}
+        options={{
+          styles: [
+            {
+              featureType: 'poi',
+              elementType: 'labels',
+              stylers: [{ visibility: 'off' }],
+            },
+          ],
+          gestureHandling: 'greedy',
+          disableDefaultUI: true,
+          zoomControl: true,
+        }}
+      >
+        {locations.map((location) => (
+          <Marker
+            key={location.id}
+            position={location.coordinates}
+            title={location.name}
+            onClick={() => onLocationSelect?.(location)}
+          />
+        ))}
+      </GoogleMap>
+    </Card>
   );
 }

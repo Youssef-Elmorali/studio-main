@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -60,20 +59,13 @@ export default function LoginPage() {
        }
 
 
-      await signInWithEmailAndPassword(auth, data.email, data.password);
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+      const user = userCredential.user;
+
       toast({ title: "Login Successful", description: "Welcome back!" });
-       // Redirect based on user role after successful login
-       const user = auth.currentUser;
-       if (user && user.email?.endsWith('@qatrah.com')) {
-         // Redirect to admin dashboard for admin emails
-         router.push('/dashboard/admin');
-       } else if (user) {
-         // Regular users go to profile
-         router.push('/profile');
-       } else {
-         // Fallback if user object is not available immediately
-         setTimeout(() => router.push('/profile'), 500);
-       }
+
+      // Redirect to home page for all users
+      router.push('/');
 
     } catch (err: any) {
         console.error("Login failed:", err);
