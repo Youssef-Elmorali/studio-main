@@ -14,6 +14,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { BloodBank } from "@/types/blood-bank";
+import GoogleMapEmbed from "@/components/google-map-embed";
 
 // Egyptian cities with their approximate coordinates
 const EGYPTIAN_CITIES = [
@@ -49,16 +50,6 @@ const EGYPTIAN_CITIES = [
   { name: "Sadat City", lat: 30.3667, lng: 30.5167 }
 ];
 
-// Dynamically import MapView with no SSR
-const MapView = dynamic(() => import("@/components/map-view"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-full">
-      <Loader2 className="h-8 w-8 animate-spin" />
-    </div>
-  ),
-});
-
 export default function DonatePage() {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(true);
@@ -71,20 +62,20 @@ export default function DonatePage() {
   React.useEffect(() => {
     const fetchBanks = async () => {
       if (!db) return;
-      setLoading(true);
+        setLoading(true);
       try {
         const banksRef = collection(db, "blood_banks");
         const banksSnapshot = await getDocs(banksRef);
         const banksData = banksSnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
+                const data = doc.data();
+                 return {
+                     id: doc.id,
             name: data.name || '',
             location: data.location || '',
             locationCoords: data.locationCoords || { lat: 0, lng: 0 },
             contactPhone: data.contactPhone,
             operatingHours: data.operatingHours,
-            website: data.website,
+                     website: data.website,
             inventory: data.inventory || {},
             lastInventoryUpdate: data.lastInventoryUpdate,
             servicesOffered: data.servicesOffered || [],
@@ -100,9 +91,9 @@ export default function DonatePage() {
           description: "Failed to load blood banks. Please try again.",
           variant: "destructive",
         });
-      } finally {
-        setLoading(false);
-      }
+        } finally {
+            setLoading(false);
+        }
     };
 
     fetchBanks();
@@ -128,25 +119,28 @@ export default function DonatePage() {
   };
 
   // Memoize the map component to prevent unnecessary re-renders
-  const MapComponent = React.useMemo(() => (
-    <MapView
-      key="donate-map"
-      locations={filteredBanks.map(bank => ({
-        ...bank,
-        type: 'blood_bank' as const,
-      }))}
-      onLocationSelect={handleBankSelect}
-      center={selectedCity !== 'all' 
-        ? EGYPTIAN_CITIES.find(city => city.name === selectedCity)?.lat 
-          ? { 
-              lat: EGYPTIAN_CITIES.find(city => city.name === selectedCity)!.lat,
-              lng: EGYPTIAN_CITIES.find(city => city.name === selectedCity)!.lng
-            }
+  const MapComponent = React.useMemo(() => {
+    return (
+      <GoogleMapEmbed
+        key="donate-map"
+        locations={filteredBanks.map(bank => ({
+          ...bank,
+          type: 'blood_bank' as const,
+        }))}
+        onLocationSelect={handleBankSelect}
+        center={selectedCity !== 'all' 
+          ? EGYPTIAN_CITIES.find(city => city.name === selectedCity)?.lat 
+            ? { 
+                lat: EGYPTIAN_CITIES.find(city => city.name === selectedCity)!.lat,
+                lng: EGYPTIAN_CITIES.find(city => city.name === selectedCity)!.lng
+              }
+            : undefined
           : undefined
-        : undefined
-      }
-    />
-  ), [filteredBanks, handleBankSelect, selectedCity]);
+        }
+        title="Find Blood Banks"
+      />
+    );
+  }, [filteredBanks, handleBankSelect, selectedCity]);
 
   if (loading) {
     return (
@@ -164,7 +158,7 @@ export default function DonatePage() {
           <p className="text-muted-foreground mt-2">
             Find a blood bank near you and schedule your donation.
           </p>
-        </div>
+              </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Select value={selectedCity} onValueChange={setSelectedCity}>
             <SelectTrigger className="w-full md:w-[300px]">
@@ -195,8 +189,8 @@ export default function DonatePage() {
               <SelectItem value="O-">O-</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
+            </div>
+          </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Map View */}
@@ -206,7 +200,7 @@ export default function DonatePage() {
               {MapComponent}
             </CardContent>
           </Card>
-        </div>
+               </div>
 
         {/* Blood Banks List */}
         <div className="space-y-4">
@@ -216,9 +210,9 @@ export default function DonatePage() {
                 <div className="flex flex-col items-center justify-center text-center space-y-2">
                   <AlertCircle className="h-8 w-8 text-muted-foreground" />
                   <p className="text-muted-foreground">No blood banks found in this city.</p>
-                </div>
-              </CardContent>
-            </Card>
+                             </div>
+                       </CardContent>
+                    </Card>
           ) : (
             filteredBanks.map((bank) => (
               <Card 
@@ -253,8 +247,8 @@ export default function DonatePage() {
                         >
                           {type}: {count}
                         </Badge>
-                      ))}
-                    </div>
+                 ))}
+               </div>
 
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       {bank.contactPhone && (
@@ -268,15 +262,15 @@ export default function DonatePage() {
                           <Clock className="h-3 w-3" />
                           {bank.operatingHours}
                         </span>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            )}
+          </div>
+                 </div>
+        </CardContent>
+      </Card>
             ))
           )}
         </div>
       </div>
     </div>
   );
-} 
+}

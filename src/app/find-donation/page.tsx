@@ -14,16 +14,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { BloodBank } from "@/types/blood-bank";
-
-// Dynamically import MapView with no SSR
-const MapView = dynamic(() => import("@/components/map-view"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-full">
-      <Loader2 className="h-8 w-8 animate-spin" />
-    </div>
-  ),
-});
+import GoogleMapEmbed from "@/components/google-map-embed";
 
 // Egyptian cities with their approximate coordinates
 const EGYPTIAN_CITIES = [
@@ -162,11 +153,12 @@ export default function FindDonationPage() {
 
   // Memoize the map component to prevent unnecessary re-renders
   const MapComponent = React.useMemo(() => (
-    <MapView
+    <GoogleMapEmbed
       key="donation-map"
       locations={mapLocations}
       onLocationSelect={handleBankSelect}
       center={mapCenter}
+      title="Find Donation Centers"
     />
   ), [mapLocations, handleBankSelect, mapCenter]);
 

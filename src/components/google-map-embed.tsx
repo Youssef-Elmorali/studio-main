@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -7,136 +6,136 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+import type { BloodBank } from '@/types/blood-bank';
 
 interface GoogleMapEmbedProps {
-  center?: google.maps.LatLngLiteral;
-  zoom?: number;
-  markers?: Array<{
-    position: google.maps.LatLngLiteral;
-    title: string;
-    address: string;
-  }>;
-  initialEmbedUrl?: string;
+  locations?: (BloodBank & { type: 'blood_bank' })[];
+  onLocationSelect?: (location: BloodBank) => void;
+  center?: { lat: number; lng: number };
   title?: string;
-  searchQuery?: string;
-  setSearchQuery?: (query: string) => void;
-  onSearchSubmit?: (event: React.FormEvent) => void;
 }
 
-const containerStyle = {
-  width: '100%',
-  height: '400px'
-};
-
 export default function GoogleMapEmbed({
-  center = { lat: 31.9632, lng: 35.9306 }, // Default to Jordan
-  zoom = 7,
-  markers = [],
-  initialEmbedUrl,
-  title,
-  searchQuery = '',
-  setSearchQuery,
-  onSearchSubmit
+  locations = [],
+  onLocationSelect,
+  center,
+  title = "Blood Banks Map"
 }: GoogleMapEmbedProps) {
-  const [isClient, setIsClient] = React.useState(false);
-  const [currentEmbedUrl, setCurrentEmbedUrl] = React.useState(initialEmbedUrl);
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [selectedLocation, setSelectedLocation] = React.useState<BloodBank | null>(null);
+  const [mapUrl, setMapUrl] = React.useState('');
 
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
+  // Default center to Cairo if no center is provided
+  const defaultCenter = { lat: 30.0444, lng: 31.2357 };
+  const mapCenter = center || defaultCenter;
 
+  // Generate map URL with markers
   React.useEffect(() => {
-    if (initialEmbedUrl) {
-      setCurrentEmbedUrl(initialEmbedUrl);
+    const baseUrl = 'https://www.google.com/maps/embed/v1/place';
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    
+    if (!apiKey) {
+      console.warn('Google Maps API key is not configured');
+      return;
     }
-  }, [initialEmbedUrl]);
 
-  // If using the Google Maps JavaScript API approach
-  if (!initialEmbedUrl && apiKey) {
-    return (
-      <div className="space-y-4 p-4 md:p-6 border rounded-lg bg-muted/50 mt-8">
-        <h3 className="text-lg font-semibold flex items-center justify-center mb-4">
-          <Globe className="mr-2 h-5 w-5 text-primary"/>Interactive Map
-        </h3>
-        
-        <LoadScript googleMapsApiKey={apiKey}>
-          <GoogleMap
-            mapContainerStyle={containerStyle}
-            center={center}
-            zoom={zoom}
-          >
-            {markers.map((marker, index) => (
-              <Marker
-                key={index}
-                position={marker.position}
-                title={marker.title}
-                label={marker.title}
-              />
-            ))}
-          </GoogleMap>
-        </LoadScript>
-      </div>
-    );
-  }
+    // Create markers for all locations
+    const markers = locations
+      .filter(location => location?.locationCoords)
+      .map(location => {
+        const { lat, lng } = location.locationCoords;
+        return `${lat},${lng}`;
+      })
+      .join('|');
 
-  // If using the embed URL approach
+    // Construct the URL
+    const url = new URL(baseUrl);
+    url.searchParams.append('key', apiKey);
+    url.searchParams.append('q', searchQuery || `${mapCenter.lat},${mapCenter.lng}`);
+    if (markers) {
+      url.searchParams.append('markers', markers);
+    }
+    url.searchParams.append('zoom', '12');
+
+    setMapUrl(url.toString());
+  }, [locations, searchQuery, mapCenter]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // The map will update automatically through the useEffect
+  };
+
+  const handleLocationClick = (location: BloodBank) => {
+    setSelectedLocation(location);
+    if (location.locationCoords) {
+      setSearchQuery(location.name);
+    }
+    onLocationSelect?.(location);
+  };
+
   return (
-    <div className="space-y-4 p-4 md:p-6 border rounded-lg bg-muted/50 mt-8">
+    <div className="space-y-4 p-4 md:p-6 border rounded-lg bg-muted/50">
       <h3 className="text-lg font-semibold flex items-center justify-center mb-4">
-        <Globe className="mr-2 h-5 w-5 text-primary"/>Map View
+        <Globe className="mr-2 h-5 w-5 text-primary"/>{title}
       </h3>
-
-      {setSearchQuery && onSearchSubmit && (
-        <form onSubmit={onSearchSubmit} className="flex flex-col sm:flex-row gap-2 mb-4">
-          <Label htmlFor="map-search" className="sr-only">Search Location</Label>
-          <Input
-            id="map-search"
-            type="search"
-            placeholder="Search map location..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-grow bg-background"
-          />
-          <Button type="submit" variant="outline">
-            <Search className="mr-2 h-4 w-4" /> Search Map
-          </Button>
-        </form>
-      )}
+      
+      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 mb-4">
+        <Label htmlFor="map-search" className="sr-only">Search Location</Label>
+        <Input
+          id="map-search"
+          type="search"
+          placeholder="Search for a blood bank..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="flex-grow bg-background"
+        />
+        <Button type="submit" variant="outline">
+          <Search className="mr-2 h-4 w-4" /> Search
+        </Button>
+      </form>
 
       <div className="relative h-[400px] w-full bg-muted-foreground/10 rounded-md overflow-hidden border">
-        {isClient ? (
-          currentEmbedUrl ? (
-            <iframe
-              key={currentEmbedUrl}
-              src={currentEmbedUrl}
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen={false}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title={title || "Map"}
-            ></iframe>
-          ) : (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Missing Map URL</AlertTitle>
-              <AlertDescription>Map embed URL is required</AlertDescription>
-            </Alert>
-          )
+        {mapUrl ? (
+          <iframe
+            src={mapUrl}
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            allowFullScreen={false}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title={title}
+          />
         ) : (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground">Loading map...</p>
-          </div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Map Configuration Error</AlertTitle>
+            <AlertDescription>
+              Google Maps API key is required for map functionality.
+            </AlertDescription>
+          </Alert>
         )}
       </div>
-      {currentEmbedUrl && (
-        <p className="text-xs text-muted-foreground text-center mt-2">
-          Map results are based on your search query.
-        </p>
-      )}
+
+      <div className="space-y-2">
+        {locations.map((location) => (
+          <div
+            key={location.id}
+            className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+              selectedLocation?.id === location.id
+                ? 'bg-primary/10 border-primary'
+                : 'hover:bg-muted'
+            }`}
+            onClick={() => handleLocationClick(location)}
+          >
+            <h4 className="font-medium">{location.name}</h4>
+            <p className="text-sm text-muted-foreground">{location.location}</p>
+            {location.contactPhone && (
+              <p className="text-sm text-muted-foreground">Phone: {location.contactPhone}</p>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
