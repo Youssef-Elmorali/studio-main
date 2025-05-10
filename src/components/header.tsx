@@ -57,9 +57,9 @@ export function Header() {
 
   const navigation = [
     { name: 'Home', href: '/' },
+    { name: 'Blood Banks', href: '/blood-banks' },
     { name: 'Find Donation', href: '/find-donation' },
-    { name: 'Request Blood', href: '/request-blood' },
-    { name: 'Campaigns', href: '/campaigns', icon: Calendar },
+    { name: 'Donate', href: '/donate' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
   ];
@@ -102,7 +102,9 @@ export function Header() {
     ];
 
     mobileAuthItems = [
-      <NotificationsDropdown key="notifications" />,
+      <div key="notifications-mobile" className="px-4 py-2">
+        <NotificationsDropdown />
+      </div>,
       isAdmin ? (
         <Link key="dashboard-mobile" href="/dashboard/admin" className="flex items-center px-4 py-2 text-sm">
           <LayoutDashboard className="h-4 w-4 mr-2" />
@@ -115,8 +117,8 @@ export function Header() {
         </Link>
       ),
       <button key="logout-mobile" onClick={handleLogout} className="flex items-center px-4 py-2 text-sm">
-             Logout
-          </button>
+        Logout
+      </button>
     ];
   } else {
     authItems = [
@@ -128,14 +130,14 @@ export function Header() {
       </Button>
     ];
 
-     mobileAuthItems = [
+    mobileAuthItems = [
       <Link key="login-mobile" href="/auth/login" className="flex items-center px-4 py-2 text-sm">
         Login
       </Link>,
       <Link key="signup-mobile" href="/auth/signup" className="flex items-center px-4 py-2 text-sm">
         Sign Up
       </Link>
-     ];
+    ];
   }
 
   return (
@@ -158,7 +160,6 @@ export function Header() {
                 pathname === item.href ? "text-foreground" : "text-foreground/60"
               )}
             >
-              {item.icon && <item.icon className="h-4 w-4" />}
               {item.name}
             </Link>
           ))}
@@ -167,7 +168,7 @@ export function Header() {
         {/* Desktop Auth, Greeting, Notification & Theme Buttons */}
         <div className="hidden md:flex items-center space-x-3 ml-auto">
           {authItems}
-           <ThemeToggle />
+          <ThemeToggle />
         </div>
 
         {/* Mobile Navigation */}
@@ -204,25 +205,11 @@ export function Header() {
                     href={item.href}
                     className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                   >
-                     {item.icon && <item.icon className="h-5 w-5" />}
                      {item.name}
                   </Link>
                 ))}
                  <DropdownMenuSeparator />
-                  {mobileAuthItems.map((item) => {
-                      if (item.element) {
-                          return <div key={item.key} className="w-full">{item.element}</div>;
-                      }
-                      return (
-                          <Link
-                              key={item.key}
-                              href={item.href}
-                              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                          >
-                              {item.label}
-                          </Link>
-                      );
-                  })}
+                  {mobileAuthItems}
               </nav>
             </SheetContent>
           </Sheet>
