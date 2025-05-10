@@ -58,6 +58,7 @@ export function Header() {
     { name: 'Home', href: '/' },
     { name: 'Find Donation', href: '/find-donation' },
     { name: 'Request Blood', href: '/request-blood' },
+    { name: 'Campaigns', href: '/campaigns' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
   ];
