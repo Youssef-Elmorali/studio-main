@@ -57,23 +57,23 @@ function ClientMap({ locations, onLocationSelect, center }: MapViewProps) {
       // If there's an existing map instance, remove it
       if (mapInstance) {
         mapInstance.remove();
-      }
+    }
       mapInstance = map;
       mapRef.current = map;
-    }
+  }
   };
 
   return (
     <MapContainer
-      center={mapCenter}
+      center={[mapCenter[0], mapCenter[1]]} 
       zoom={center ? 12 : 6}
       style={{ height: "100%", width: "100%" }}
       ref={handleMapRef}
     >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
       {validLocations.map((location) => (
         <Marker 
           key={location.id} 
@@ -85,7 +85,7 @@ function ClientMap({ locations, onLocationSelect, center }: MapViewProps) {
             click: () => onLocationSelect?.(location)
           }}
         >
-          <Popup>
+                <Popup>
             <div className="p-2">
               <h3 className="font-bold">{location.name}</h3>
               <p className="text-sm text-gray-600">{location.location}</p>
@@ -94,10 +94,10 @@ function ClientMap({ locations, onLocationSelect, center }: MapViewProps) {
                 <p className="text-sm text-gray-500">Phone: {location.contactPhone}</p>
               )}
             </div>
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
   );
 }
 
