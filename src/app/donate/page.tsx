@@ -15,6 +15,40 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { BloodBank } from "@/types/blood-bank";
 
+// Egyptian cities with their approximate coordinates
+const EGYPTIAN_CITIES = [
+  { name: "Cairo", lat: 30.0444, lng: 31.2357 },
+  { name: "Alexandria", lat: 31.2001, lng: 29.9187 },
+  { name: "Giza", lat: 30.0131, lng: 31.2089 },
+  { name: "Shubra El Kheima", lat: 30.1286, lng: 31.2422 },
+  { name: "Port Said", lat: 31.2667, lng: 32.3000 },
+  { name: "Suez", lat: 29.9667, lng: 32.5500 },
+  { name: "Luxor", lat: 25.6872, lng: 32.6396 },
+  { name: "Mansoura", lat: 31.0500, lng: 31.3833 },
+  { name: "El-Mahalla El-Kubra", lat: 30.9697, lng: 31.1667 },
+  { name: "Tanta", lat: 30.7833, lng: 31.0000 },
+  { name: "Asyut", lat: 27.1833, lng: 31.1833 },
+  { name: "Ismailia", lat: 30.5833, lng: 32.2667 },
+  { name: "Fayoum", lat: 29.3083, lng: 30.8441 },
+  { name: "Zagazig", lat: 30.5833, lng: 31.5000 },
+  { name: "Aswan", lat: 24.0889, lng: 32.8997 },
+  { name: "Damietta", lat: 31.4167, lng: 31.8167 },
+  { name: "Damanhur", lat: 31.0333, lng: 30.4667 },
+  { name: "El-Minya", lat: 28.1097, lng: 30.7503 },
+  { name: "Beni Suef", lat: 29.0667, lng: 31.0833 },
+  { name: "Hurghada", lat: 27.2578, lng: 33.8117 },
+  { name: "Sharm El Sheikh", lat: 27.9158, lng: 34.3300 },
+  { name: "6th of October City", lat: 29.9364, lng: 30.9267 },
+  { name: "New Cairo", lat: 30.0300, lng: 31.4700 },
+  { name: "Sheikh Zayed City", lat: 30.0500, lng: 30.9500 },
+  { name: "Sohag", lat: 26.5500, lng: 31.7000 },
+  { name: "Qena", lat: 26.1667, lng: 32.7167 },
+  { name: "Banha", lat: 30.4667, lng: 31.1833 },
+  { name: "Arish", lat: 31.1333, lng: 33.8000 },
+  { name: "10th of Ramadan City", lat: 30.3000, lng: 31.7500 },
+  { name: "Sadat City", lat: 30.3667, lng: 30.5167 }
+];
+
 // Dynamically import MapView with no SSR
 const MapView = dynamic(() => import("@/components/map-view"), {
   ssr: false,
