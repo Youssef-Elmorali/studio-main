@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -17,7 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import MapView from "@/components/map-view";
+import { MapView } from "@/components/map-view";
 import Link from "next/link";
 import type { BloodBank } from "@/types/blood-bank";
 import { BloodCompatibilityChart } from "@/components/blood-compatibility-chart";

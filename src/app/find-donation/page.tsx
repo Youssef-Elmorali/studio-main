@@ -8,12 +8,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, MapPin, Phone, Clock, Navigation, Loader2, AlertCircle } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import MapView from "@/components/map-view";
+import dynamic from 'next/dynamic';
 import { db } from "@/lib/firebase/client";
 import { collection, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { BloodBank } from "@/types/blood-bank";
+
+// Dynamically import MapView with no SSR
+const MapView = dynamic(() => import("@/components/map-view"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <Loader2 className="h-8 w-8 animate-spin" />
+    </div>
+  ),
+});
 
 // Egyptian cities with their approximate coordinates
 const EGYPTIAN_CITIES = [
@@ -150,6 +160,16 @@ export default function FindDonationPage() {
     };
   }, [selectedCity]);
 
+  // Memoize the map component to prevent unnecessary re-renders
+  const MapComponent = React.useMemo(() => (
+    <MapView
+      key="donation-map"
+      locations={mapLocations}
+      onLocationSelect={handleBankSelect}
+      center={mapCenter}
+    />
+  ), [mapLocations, handleBankSelect, mapCenter]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -205,11 +225,7 @@ export default function FindDonationPage() {
         <div className="lg:col-span-2">
           <Card className="h-[600px]">
             <CardContent className="p-0 h-full">
-              <MapView
-                locations={mapLocations}
-                onLocationSelect={handleBankSelect}
-                center={mapCenter}
-              />
+              {MapComponent}
             </CardContent>
           </Card>
         </div>
@@ -285,4 +301,4 @@ export default function FindDonationPage() {
       </div>
     </div>
   );
-} 
+}

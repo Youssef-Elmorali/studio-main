@@ -1,41 +1,54 @@
 "use client";
 
-import React, { createContext, useContext, ReactNode } from 'react';
-import { useLoadScript } from '@react-google-maps/api';
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import React, { createContext, useContext, useState } from "react";
+import { db } from "@/lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+interface Location {
+  id: string;
+  name: string;
+  address: string;
+  coordinates: [number, number];
+  type: string;
+}
 
 interface MapsContextType {
-  isLoaded: boolean;
-  loadError: Error | undefined;
+  locations: Location[];
+  loading: boolean;
+  error: string | null;
+  getLocations: () => Promise<Location[]>;
 }
 
 const MapsContext = createContext<MapsContextType | undefined>(undefined);
 
-export function MapsProvider({ children }: { children: ReactNode }) {
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-    libraries,
-    preventGoogleFontsLoading: true, // Prevent loading Google Fonts
-  });
+export function MapsProvider({ children }: { children: React.ReactNode }) {
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  if (loadError) {
-    return (
-      <div className="p-4">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Unable to load Google Maps. Please check your ad blocker settings or try refreshing the page.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
+  const getLocations = async (): Promise<Location[]> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const locationsRef = collection(db, "locations");
+      const snapshot = await getDocs(locationsRef);
+      const locationsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Location[];
+      setLocations(locationsData);
+      return locationsData;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch locations";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <MapsContext.Provider value={{ isLoaded, loadError }}>
+    <MapsContext.Provider value={{ locations, loading, error, getLocations }}>
       {children}
     </MapsContext.Provider>
   );
@@ -44,7 +57,7 @@ export function MapsProvider({ children }: { children: ReactNode }) {
 export function useMaps() {
   const context = useContext(MapsContext);
   if (context === undefined) {
-    throw new Error('useMaps must be used within a MapsProvider');
+    throw new Error("useMaps must be used within a MapsProvider");
   }
   return context;
 } 
