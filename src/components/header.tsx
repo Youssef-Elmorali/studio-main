@@ -216,6 +216,10 @@ export function Header() {
                 ))}
                 <div className="border-t my-2" />
                 {mobileAuthItems}
+                <div className="border-t my-2" />
+                <div className="px-4 py-3">
+                  <ThemeToggle />
+                </div>
               </nav>
             </SheetContent>
           </Sheet>

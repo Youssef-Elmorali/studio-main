@@ -57,6 +57,12 @@ export default function UrgentNeeds() {
           </CardTitle>
           <CardDescription>Loading urgent needs...</CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-4">
+            <Loader2 className="h-8 w-8 animate-spin text-destructive mb-2" />
+            <p className="text-sm text-muted-foreground">Fetching urgent requests...</p>
+          </div>
+        </CardContent>
       </Card>
     );
   }
@@ -74,35 +80,46 @@ export default function UrgentNeeds() {
         <CardDescription>Critical blood requests in your area. Your donation can make a difference immediately.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap justify-center gap-4">
-          {urgentNeeds.map((need) => (
-            <div
-              key={need.id}
-              className="flex items-center gap-2 p-3 bg-background rounded-lg shadow-sm"
-            >
-              <Badge
-                variant={
-                  need.urgency === 'Critical'
-                    ? 'destructive'
-                    : need.urgency === 'High'
-                    ? 'default'
-                    : 'secondary'
-                }
-              >
-                {need.bloodType}
-              </Badge>
-              <span className="text-sm font-medium">{need.location}</span>
-              <Badge variant="outline" className="ml-auto">
-                {need.urgency}
-              </Badge>
+        {urgentNeeds.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-muted-foreground mb-4">No urgent requests at the moment.</p>
+            <Button variant="destructive" asChild>
+              <Link href="/request-blood">Make a Blood Request</Link>
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap justify-center gap-4">
+              {urgentNeeds.map((need) => (
+                <div
+                  key={need.id}
+                  className="flex items-center gap-2 p-3 bg-background rounded-lg shadow-sm"
+                >
+                  <Badge
+                    variant={
+                      need.urgency === 'Critical'
+                        ? 'destructive'
+                        : need.urgency === 'High'
+                        ? 'default'
+                        : 'secondary'
+                    }
+                  >
+                    {need.bloodType}
+                  </Badge>
+                  <span className="text-sm font-medium">{need.location}</span>
+                  <Badge variant="outline" className="ml-auto">
+                    {need.urgency}
+                  </Badge>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="text-center mt-6">
-          <Button variant="destructive" asChild>
-            <Link href="/request">View All Urgent Requests</Link>
-          </Button>
-        </div>
+            <div className="text-center mt-6">
+              <Button variant="destructive" asChild>
+                <Link href="/request-blood">View All Urgent Requests</Link>
+              </Button>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

@@ -9,7 +9,6 @@ import { Megaphone, Droplets, CalendarCheck, Target, MapPin, UserCheck, Link as 
 import Link from "next/link";
 import Image from 'next/image';
 import DonationJourney from "@/components/donation-journey";
-import UrgentNeeds from '@/components/urgent-needs';
 import Hero from '@/components/hero';
 import DonationCenters from '@/components/donation-centers';
 import DonationStats from '@/components/donation-stats';
@@ -38,10 +37,10 @@ export default function Home() {
           {/* Left Column */}
           <div className="lg:col-span-7 space-y-8">
             <div className="bg-card rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 border border-border/50">
-              <UrgentNeeds />
+              <DonationJourney />
             </div>
             <div className="bg-card rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 border border-border/50">
-              <DonationJourney />
+              <WhyDonate />
             </div>
           </div>
 
@@ -62,13 +61,6 @@ export default function Home() {
                 Request Blood
               </Link>
             </Button>
-          </div>
-        </div>
-
-        {/* Why Donate Section */}
-        <div className="mb-16">
-          <div className="bg-card rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 border border-border/50">
-            <WhyDonate />
           </div>
         </div>
 
