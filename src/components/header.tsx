@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Droplets, UserCircle, HeartHandshake, Search, LogIn, UserPlus, Bell, LayoutDashboard, LogOut, Loader2, User, Calendar } from 'lucide-react';
+import { Droplets, UserCircle, HeartHandshake, Search, LogIn, UserPlus, Bell, LayoutDashboard, LogOut, Loader2, User, Calendar, Menu } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -11,7 +11,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,9 +56,8 @@ export function Header() {
 
   const navigation = [
     { name: 'Home', href: '/' },
-    { name: 'Blood Banks', href: '/blood-banks' },
     { name: 'Find Donation', href: '/find-donation' },
-    { name: 'Donate', href: '/donate' },
+    { name: 'Request Blood', href: '/request-blood' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
   ];
@@ -102,21 +100,25 @@ export function Header() {
     ];
 
     mobileAuthItems = [
+      <div key="welcome-mobile" className="px-4 py-3 border-b">
+        <p className="text-sm font-medium">Welcome, {welcomeName}!</p>
+      </div>,
       <div key="notifications-mobile" className="px-4 py-2">
         <NotificationsDropdown />
       </div>,
       isAdmin ? (
-        <Link key="dashboard-mobile" href="/dashboard/admin" className="flex items-center px-4 py-2 text-sm">
+        <Link key="dashboard-mobile" href="/dashboard/admin" className="flex items-center px-4 py-3 text-sm hover:bg-accent">
           <LayoutDashboard className="h-4 w-4 mr-2" />
           Dashboard
         </Link>
       ) : (
-        <Link key="profile-mobile" href="/profile" className="flex items-center px-4 py-2 text-sm">
+        <Link key="profile-mobile" href="/profile" className="flex items-center px-4 py-3 text-sm hover:bg-accent">
           <User className="h-4 w-4 mr-2" />
           Profile
         </Link>
       ),
-      <button key="logout-mobile" onClick={handleLogout} className="flex items-center px-4 py-2 text-sm">
+      <button key="logout-mobile" onClick={handleLogout} className="flex items-center px-4 py-3 text-sm hover:bg-accent w-full text-left">
+        <LogOut className="h-4 w-4 mr-2" />
         Logout
       </button>
     ];
@@ -131,10 +133,12 @@ export function Header() {
     ];
 
     mobileAuthItems = [
-      <Link key="login-mobile" href="/auth/login" className="flex items-center px-4 py-2 text-sm">
+      <Link key="login-mobile" href="/auth/login" className="flex items-center px-4 py-3 text-sm hover:bg-accent">
+        <LogIn className="h-4 w-4 mr-2" />
         Login
       </Link>,
-      <Link key="signup-mobile" href="/auth/signup" className="flex items-center px-4 py-2 text-sm">
+      <Link key="signup-mobile" href="/auth/signup" className="flex items-center px-4 py-3 text-sm hover:bg-accent">
+        <UserPlus className="h-4 w-4 mr-2" />
         Sign Up
       </Link>
     ];
@@ -142,15 +146,14 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      {/* Added pl-4 for left padding */}
-      <div className="container flex h-14 items-center justify-between pl-4">
-        <Link href="/" className="flex items-center mr-6">
-          <Droplets className="mr-2 h-6 w-6 text-primary" />
-          <span className="font-bold text-lg">Qatrah Hayat</span>
+      <div className="container flex h-16 items-center justify-between px-4">
+        <Link href="/" className="flex items-center space-x-2">
+          <Droplets className="h-6 w-6 text-primary" />
+          <span className="font-bold text-lg hidden sm:inline-block">Qatrah Hayat</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium ml-8">
           {navigation.map((item) => (
             <Link
               key={item.href}
@@ -172,44 +175,47 @@ export function Header() {
         </div>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden ml-auto flex items-center space-x-2">
-           {loading && (
-             <>
-                <Button variant="ghost" size="icon" disabled className="w-8 h-8 animate-pulse bg-muted rounded-full"></Button>
-                <Button variant="ghost" size="icon" disabled className="w-8 h-8 animate-pulse bg-muted rounded-full"></Button>
-             </>
-           )}
+        <div className="md:hidden flex items-center space-x-2">
+          {loading && (
+            <>
+              <Button variant="ghost" size="icon" disabled className="w-8 h-8 animate-pulse bg-muted rounded-full"></Button>
+              <Button variant="ghost" size="icon" disabled className="w-8 h-8 animate-pulse bg-muted rounded-full"></Button>
+            </>
+          )}
           {isLoggedIn && !loading && (
             <ThemeToggle />
-                     )}
+          )}
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle Menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right">
-               <SheetHeader className="border-b pb-4 mb-4">
-                  <SheetTitle>
-                    <Link href="/" className="flex items-center justify-center gap-2">
-                       <Droplets className="h-6 w-6 text-primary" />
-                       <span className="font-bold text-lg">Qatrah Hayat</span> {/* Added name here */}
-                    </Link>
-                  </SheetTitle>
-               </SheetHeader>
-              <nav className="grid gap-6 text-lg font-medium">
+            <SheetContent side="right" className="w-[280px] sm:w-[350px] p-0">
+              <SheetHeader className="border-b p-4">
+                <SheetTitle>
+                  <Link href="/" className="flex items-center space-x-2">
+                    <Droplets className="h-6 w-6 text-primary" />
+                    <span className="font-bold text-lg">Qatrah Hayat</span>
+                  </Link>
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col">
                 {navigation.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                    className={cn(
+                      "flex items-center px-4 py-3 text-sm hover:bg-accent",
+                      pathname === item.href ? "bg-accent" : ""
+                    )}
                   >
-                     {item.name}
+                    {item.name}
                   </Link>
                 ))}
-                 <DropdownMenuSeparator />
-                  {mobileAuthItems}
+                <div className="border-t my-2" />
+                {mobileAuthItems}
               </nav>
             </SheetContent>
           </Sheet>

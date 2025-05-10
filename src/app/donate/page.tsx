@@ -8,13 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, MapPin, Phone, Clock, Navigation, Loader2, AlertCircle } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import dynamic from 'next/dynamic';
 import { db } from "@/lib/firebase/client";
 import { collection, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { BloodBank } from "@/types/blood-bank";
-import GoogleMapEmbed from "@/components/google-map-embed";
 
 // Egyptian cities with their approximate coordinates
 const EGYPTIAN_CITIES = [
@@ -54,7 +52,6 @@ export default function DonatePage() {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(true);
   const [banks, setBanks] = React.useState<BloodBank[]>([]);
-  const [selectedBank, setSelectedBank] = React.useState<BloodBank | null>(null);
   const [selectedCity, setSelectedCity] = React.useState<string>("all");
   const [selectedBloodType, setSelectedBloodType] = React.useState<string>("all");
 
@@ -62,20 +59,20 @@ export default function DonatePage() {
   React.useEffect(() => {
     const fetchBanks = async () => {
       if (!db) return;
-        setLoading(true);
+      setLoading(true);
       try {
         const banksRef = collection(db, "blood_banks");
         const banksSnapshot = await getDocs(banksRef);
         const banksData = banksSnapshot.docs.map((doc) => {
-                const data = doc.data();
-                 return {
-                     id: doc.id,
+          const data = doc.data();
+          return {
+            id: doc.id,
             name: data.name || '',
             location: data.location || '',
             locationCoords: data.locationCoords || { lat: 0, lng: 0 },
             contactPhone: data.contactPhone,
             operatingHours: data.operatingHours,
-                     website: data.website,
+            website: data.website,
             inventory: data.inventory || {},
             lastInventoryUpdate: data.lastInventoryUpdate,
             servicesOffered: data.servicesOffered || [],
@@ -91,9 +88,9 @@ export default function DonatePage() {
           description: "Failed to load blood banks. Please try again.",
           variant: "destructive",
         });
-        } finally {
-            setLoading(false);
-        }
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchBanks();
@@ -114,34 +111,6 @@ export default function DonatePage() {
     });
   }, [banks, selectedCity, selectedBloodType]);
 
-  const handleBankSelect = (bank: BloodBank) => {
-    setSelectedBank(bank);
-  };
-
-  // Memoize the map component to prevent unnecessary re-renders
-  const MapComponent = React.useMemo(() => {
-    return (
-      <GoogleMapEmbed
-        key="donate-map"
-        locations={filteredBanks.map(bank => ({
-          ...bank,
-          type: 'blood_bank' as const,
-        }))}
-        onLocationSelect={handleBankSelect}
-        center={selectedCity !== 'all' 
-          ? EGYPTIAN_CITIES.find(city => city.name === selectedCity)?.lat 
-            ? { 
-                lat: EGYPTIAN_CITIES.find(city => city.name === selectedCity)!.lat,
-                lng: EGYPTIAN_CITIES.find(city => city.name === selectedCity)!.lng
-              }
-            : undefined
-          : undefined
-        }
-        title="Find Blood Banks"
-      />
-    );
-  }, [filteredBanks, handleBankSelect, selectedCity]);
-
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -158,7 +127,7 @@ export default function DonatePage() {
           <p className="text-muted-foreground mt-2">
             Find a blood bank near you and schedule your donation.
           </p>
-              </div>
+        </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Select value={selectedCity} onValueChange={setSelectedCity}>
             <SelectTrigger className="w-full md:w-[300px]">
@@ -189,87 +158,73 @@ export default function DonatePage() {
               <SelectItem value="O-">O-</SelectItem>
             </SelectContent>
           </Select>
-            </div>
-          </div>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Map View */}
-        <div className="lg:col-span-2">
-          <Card className="h-[600px]">
-            <CardContent className="p-0 h-full">
-              {MapComponent}
+      {/* Blood Banks Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {filteredBanks.length === 0 ? (
+          <Card className="col-span-full">
+            <CardContent className="p-6">
+              <div className="flex flex-col items-center justify-center text-center space-y-2">
+                <AlertCircle className="h-8 w-8 text-muted-foreground" />
+                <p className="text-muted-foreground">No blood banks found in this city.</p>
+              </div>
             </CardContent>
           </Card>
-               </div>
-
-        {/* Blood Banks List */}
-        <div className="space-y-4">
-          {filteredBanks.length === 0 ? (
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex flex-col items-center justify-center text-center space-y-2">
-                  <AlertCircle className="h-8 w-8 text-muted-foreground" />
-                  <p className="text-muted-foreground">No blood banks found in this city.</p>
-                             </div>
-                       </CardContent>
-                    </Card>
-          ) : (
-            filteredBanks.map((bank) => (
-              <Card 
-                key={bank.id}
-                className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-                  selectedBank?.id === bank.id ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => handleBankSelect(bank)}
-              >
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold">{bank.name}</h3>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {bank.location}
-                        </p>
-                      </div>
-                      <Link href={`/donate/banks/${bank.id}`}>
-                        <Button variant="outline" size="sm">
-                          View Details
-                        </Button>
-                      </Link>
+        ) : (
+          filteredBanks.map((bank) => (
+            <Card 
+              key={bank.id}
+              className="transition-all duration-200 hover:shadow-md"
+            >
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-semibold">{bank.name}</h3>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {bank.location}
+                      </p>
                     </div>
+                    <Link href={`/donate/banks/${bank.id}`}>
+                      <Button variant="outline" size="sm">
+                        View Details
+                      </Button>
+                    </Link>
+                  </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(bank.inventory || {}).map(([type, count]) => (
-                        <Badge 
-                          key={type}
-                          variant={count > 10 ? "default" : count > 0 ? "secondary" : "destructive"}
-                        >
-                          {type}: {count}
-                        </Badge>
-                 ))}
-               </div>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(bank.inventory || {}).map(([type, count]) => (
+                      <Badge 
+                        key={type}
+                        variant={count > 10 ? "default" : count > 0 ? "secondary" : "destructive"}
+                      >
+                        {type}: {count}
+                      </Badge>
+                    ))}
+                  </div>
 
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      {bank.contactPhone && (
-                        <span className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {bank.contactPhone}
-                        </span>
-                      )}
-                      {bank.operatingHours && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {bank.operatingHours}
-                        </span>
-            )}
-          </div>
-                 </div>
-        </CardContent>
-      </Card>
-            ))
-          )}
-        </div>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    {bank.contactPhone && (
+                      <span className="flex items-center gap-1">
+                        <Phone className="h-3 w-3" />
+                        {bank.contactPhone}
+                      </span>
+                    )}
+                    {bank.operatingHours && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {bank.operatingHours}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );
