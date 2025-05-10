@@ -5,14 +5,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapView } from "@/components/map-view";
-import { Search, MapPin, Phone, Clock, Droplets, AlertCircle, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Search, MapPin, Phone, Clock, Navigation, Loader2 } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import dynamic from 'next/dynamic';
 import { db } from "@/lib/firebase/client";
 import { collection, getDocs } from "firebase/firestore";
-import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { BloodBank } from "@/types/blood-bank";
+
+// Dynamically import MapView with no SSR
+const MapView = dynamic(() => import("@/components/map-view"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <Loader2 className="h-8 w-8 animate-spin" />
+    </div>
+  ),
+});
 
 // Egyptian cities with their approximate coordinates
 const EGYPTIAN_CITIES = [
@@ -116,6 +127,27 @@ export default function BloodBanksPage() {
     setSelectedBank(bank);
   };
 
+  // Memoize the map component to prevent unnecessary re-renders
+  const MapComponent = React.useMemo(() => (
+    <MapView
+      key="blood-banks-map"
+      locations={filteredBanks.map(bank => ({
+        ...bank,
+        type: 'blood_bank' as const,
+      }))}
+      onLocationSelect={handleBankSelect}
+      center={selectedCity !== 'all' 
+        ? EGYPTIAN_CITIES.find(city => city.name === selectedCity)?.lat 
+          ? { 
+              lat: EGYPTIAN_CITIES.find(city => city.name === selectedCity)!.lat,
+              lng: EGYPTIAN_CITIES.find(city => city.name === selectedCity)!.lng
+            }
+          : undefined
+        : undefined
+      }
+    />
+  ), [filteredBanks, handleBankSelect, selectedCity]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -171,22 +203,7 @@ export default function BloodBanksPage() {
         <div className="lg:col-span-2">
           <Card className="h-[600px]">
             <CardContent className="p-0 h-full">
-              <MapView
-                locations={filteredBanks.map(bank => ({
-                  ...bank,
-                  type: 'blood_bank' as const,
-                }))}
-                onLocationSelect={handleBankSelect}
-                center={selectedCity !== 'all' 
-                  ? EGYPTIAN_CITIES.find(city => city.name === selectedCity)?.lat 
-                    ? { 
-                        lat: EGYPTIAN_CITIES.find(city => city.name === selectedCity)!.lat,
-                        lng: EGYPTIAN_CITIES.find(city => city.name === selectedCity)!.lng
-                      }
-                    : undefined
-                  : undefined
-                }
-              />
+              {MapComponent}
             </CardContent>
           </Card>
         </div>
